@@ -88,15 +88,9 @@ nfsproc_getattr_2_svc(argp, rqstp)
 {
   static attrstat  result;
 
-  NSLog(@"NFS GETATTR %08x %08x %08x %08x",
-        *((int *)  (argp->data)),
-	*((int *) ((argp->data) +  4)),
-	*((int *) ((argp->data) +  8)),
-	*((int *) ((argp->data) + 12)));
-	
   FileHandle *handle = [FileHandle handleWithBytes: argp->data];
 
-  NSLog(@"created handle %@", handle);
+  NSLog(@"NFS GETATTR %@", handle);
 	
   if ([handle isEqual: [[DentryDirectory root] handle]])
   {
@@ -109,11 +103,11 @@ nfsproc_getattr_2_svc(argp, rqstp)
     attr->uid = getuid();
     attr->gid = getgid();
     attr->size = 1;
-    attr->blocksize = 1;
+    attr->blocksize = 1024;
     attr->rdev = 0;
     attr->blocks = 1;
     attr->fsid = 1;
-    attr->fileid = 0;
+    attr->fileid = [handle hash];
     Dentry *d = [DentryDirectory root];
     NSLog(@"root dentry = %@", d);
     attr->atime.seconds = [[d accessedTime] timeIntervalSince1970];
@@ -140,11 +134,11 @@ nfsproc_getattr_2_svc(argp, rqstp)
       attr->uid = getuid();
       attr->gid = getgid();
       attr->size = 1;
-      attr->blocksize = 1;
+      attr->blocksize = 1024;
       attr->rdev = 0;
       attr->blocks = 1;
       attr->fsid = 0;
-      attr->fileid = 0;
+      attr->fileid = [handle hash];
       attr->atime.seconds = [[d accessedTime] timeIntervalSince1970];
       attr->atime.useconds = 0;
       attr->ctime.seconds = [[d createdTime] timeIntervalSince1970];
@@ -163,11 +157,11 @@ nfsproc_getattr_2_svc(argp, rqstp)
       attr->uid = getuid();
       attr->gid = getgid();
       attr->size = [[file realpath] length]; // XXX UTF-8?
-      attr->blocksize = 1;
+      attr->blocksize = 1024;
       attr->rdev = 0;
-      attr->blocks = attr->size;
+      attr->blocks = (attr->size + 1023) / 1024;
       attr->fsid = 1;
-      attr->fileid = 0;
+      attr->fileid = [handle hash];
       attr->atime.seconds = [[d accessedTime] timeIntervalSince1970];
       attr->atime.useconds = 0;
       attr->ctime.seconds = [[d createdTime] timeIntervalSince1970];
@@ -185,8 +179,9 @@ nfsproc_setattr_2_svc(argp, rqstp)
 	sattrargs *argp;
 	struct svc_req *rqstp;
 {
-  static attrstat  result;
-
+  static attrstat result;
+  NSLog(@"NFS SETATTR");
+  result.status = NFSERR_PERM;
   return(&result);
 }
 
@@ -195,8 +190,9 @@ nfsproc_root_2_svc(argp, rqstp)
 	void *argp;
 	struct svc_req *rqstp;
 {
-	static char* result = "/Birch";
-	return((void*) &result);
+  static char* result = "/Birch";
+  NSLog(@"NFS ROOT");
+  return((void*) &result);
 }
 
 diropres *
@@ -210,34 +206,14 @@ nfsproc_lookup_2_svc(argp, rqstp)
   NFSServer *srv = [NFSServer server];
   FileHandle *handle = [FileHandle handleWithBytes: argp->dir.data];
   DentryDirectory *dir = nil;
-  
-  if ([handle isEqual: [[DentryDirectory root] handle]])
-  {
-    dir = [DentryDirectory root];
-  }
-  
-  Dentry *dentry = [srv lookup: handle];
-  if (dentry == nil)
-  {
-    result.status = NFSERR_STALE;
-    return &result;
-  }
-  
-  if ([dentry isKindOfClass: [DentryDirectory class]])
-  {
-    dir = (DentryDirectory *) dentry;
-  }
-  else
-  {
-    result.status = NFSERR_NOTDIR;
-    return (&result);
-  }
+
+  NSLog(@"NFS LOOKUP fh: %@ name: %@", handle, name);
   
   // The file handle is always the MD5 sum (0-filled) of the full path.
   FileHandle *target = [FileHandle handleWithPath: [NSString stringWithFormat:
     @"%@/%@", [dir path], name]];
   
-  dentry = [srv lookup: handle];
+  Dentry *dentry = [srv lookup: handle];
   
   if (dentry == nil)
   {
@@ -290,7 +266,7 @@ nfsproc_lookup_2_svc(argp, rqstp)
   attr->nlink = 1;
   attr->uid = getuid();
   attr->gid = getgid();
-  attr->blocksize = 1;
+  attr->blocksize = 1024;
   attr->rdev = 0;
   attr->atime.seconds = [[dentry accessedTime] timeIntervalSince1970];
   attr->ctime.seconds = [[dentry createdTime] timeIntervalSince1970];
@@ -308,7 +284,7 @@ nfsproc_lookup_2_svc(argp, rqstp)
     attr->type = NFLNK;
     attr->mode = NFSMODE_LNK | 0666;
     attr->size = [[f realpath] length]; // XXX UTF-8
-    attr->blocks = attr->size;
+    attr->blocks = (attr->size + 1023) / 1024;
   }
   
   return(&result);
@@ -324,6 +300,8 @@ nfsproc_readlink_2_svc(argp, rqstp)
   FileHandle *handle = [FileHandle handleWithBytes: argp->data];
   Dentry *dentry = [[NFSServer server] lookup: handle];
   
+  NSLog(@"NFS READLINK %@", handle);
+  
   if (dentry == nil)
   {
     result.status = NFSERR_STALE;
@@ -335,7 +313,7 @@ nfsproc_readlink_2_svc(argp, rqstp)
   else
   {
     DentryFile *file = (DentryFile *) dentry;
-    result.readlinkres_u.data = [[dentry realpath] UTF8String];
+    result.readlinkres_u.data = [[file realpath] UTF8String];
   }
 
   return(&result);
@@ -350,6 +328,8 @@ nfsproc_read_2_svc(argp, rqstp)
 
   FileHandle *handle = [FileHandle handleWithBytes: argp->file.data];
   Dentry *dentry = [[NFSServer server] lookup: handle];
+
+  NSLog(@"NFS READ %@", handle);
   
   if (dentry == nil)
   {
@@ -374,7 +354,7 @@ nfsproc_writecache_2_svc(argp, rqstp)
 	struct svc_req *rqstp;
 {
   static char* result;
-
+  NSLog(@"NFS WRITECACHE");
   return((void*) &result);
 }
 
@@ -383,8 +363,9 @@ nfsproc_write_2_svc(argp, rqstp)
 	writeargs *argp;
 	struct svc_req *rqstp;
 {
-  static attrstat  result;
-
+  static attrstat result;
+  NSLog(@"NFS WRITE");
+  result.status = NFSERR_PERM; // XXX suck a fuck
   return(&result);
 }
 
@@ -394,6 +375,7 @@ nfsproc_create_2_svc(argp, rqstp)
 	struct svc_req *rqstp;
 {
   static diropres result;
+  NSLog(@"NFS CREATE");
   result.status = NFSERR_PERM;
   return(&result);
 }
@@ -404,6 +386,7 @@ nfsproc_remove_2_svc(argp, rqstp)
 	struct svc_req *rqstp;
 {
   static nfsstat result = NFSERR_PERM;
+  NSLog(@"NFS REMOVE");
   // FIXME: delete directories from subordinate sets/root set.
   return(&result);
 }
@@ -416,6 +399,7 @@ nfsproc_rename_2_svc(argp, rqstp)
   static nfsstat result = NFSERR_PERM;
 
   // Allow rename of directories?
+  NSLog(@"NFS RENAME");
 
   return(&result);
 }
@@ -426,6 +410,7 @@ nfsproc_link_2_svc(argp, rqstp)
 	struct svc_req *rqstp;
 {
   static nfsstat result = NFSERR_INVAL;
+  NSLog(@"NFS LINK");
   return(&result);
 }
 
@@ -435,6 +420,7 @@ nfsproc_symlink_2_svc(argp, rqstp)
 	struct svc_req *rqstp;
 {
   static nfsstat result = NFSERR_INVAL;
+  NSLog(@"NFS SYMLINK");
   return(&result);
 }
 
@@ -444,8 +430,8 @@ nfsproc_mkdir_2_svc(argp, rqstp)
 	struct svc_req *rqstp;
 {
   static diropres  result;
-
-
+  result.status = NFSERR_PERM;
+  NSLog(@"NFS MKDIR");
   return(&result);
 }
 
@@ -454,14 +440,9 @@ nfsproc_rmdir_2_svc(argp, rqstp)
 	diropargs *argp;
 	struct svc_req *rqstp;
 {
-
-	static nfsstat  result;
-
-	/*
-	 * insert server code here
-	 */
-
-	return(&result);
+  static nfsstat result = NFSERR_PERM;
+  NSLog(@"NFS RMDIR");
+  return(&result);
 }
 
 readdirres *
@@ -477,6 +458,8 @@ nfsproc_readdir_2_svc(argp, rqstp)
   FileHandle *handle = [FileHandle handleWithBytes: argp->dir.data];
   Dentry *dentry = [srv lookup: handle];
   entry *current = NULL;
+  
+  NSLog(@"NFS READDIR handle: %@ count: %d", handle, argp->count);
   
   if (dentry == nil)
   {
@@ -533,6 +516,7 @@ nfsproc_readdir_2_svc(argp, rqstp)
 	[HeapBuffer bufferWithPointer: e];
 	idx++;
 	[query setIndex: idx];
+	NSLog(@"    READDIR %@ (DIR)", name);
       }
     }
     else
@@ -562,6 +546,7 @@ nfsproc_readdir_2_svc(argp, rqstp)
 	[HeapBuffer bufferWithPointer: e];
 	idx++;
 	[query setIndex: idx];
+	NSLog(@"    READDIR %@ (LNK)", name);
       }
     }
   }
@@ -581,7 +566,22 @@ nfsproc_statfs_2_svc(argp, rqstp)
 	nfs_fh *argp;
 	struct svc_req *rqstp;
 {
-  static statfsres  result;
-
+  static statfsres result;
+  FileHandle *handle = [FileHandle handleWithBytes: argp->data];
+  NSLog(@"NFS STATFS %@", handle);
+  Dentry *d = [[NFSServer server] lookup: handle];
+  if (d == nil)
+  {
+    result.status = NFSERR_STALE;
+  }
+  else
+  {
+    result.status = NFS_OK;
+    result.statfsres_u.reply.tsize = 1024;
+    result.statfsres_u.reply.bsize = 1024;
+    result.statfsres_u.reply.blocks = 5 * 1024 * 1024;
+    result.statfsres_u.reply.bfree = 4 * 1024 * 1024;
+    result.statfsres_u.reply.bavail = 5 * 1024 * 1024;
+  }
   return(&result);
 }
