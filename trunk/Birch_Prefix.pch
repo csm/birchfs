@@ -1,0 +1,7 @@
+//
+// Prefix header for all source files of the 'Birch' target in the 'Birch' project
+//
+
+#ifdef __OBJC__
+    #import <Cocoa/Cocoa.h>
+#endif
