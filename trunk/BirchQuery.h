@@ -33,7 +33,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
        subordinates: (NSArray *) subordinates;
 
 + (BirchQuery *) queryWithArray: (NSArray *) anArray;
-+ (NSString *) predicateForKey: (NSString *) aKey
++ (NSPredicate *) predicateForKey: (NSString *) aKey
   test: (NSString *) aTest
   value: (NSString *) aValue;
 
