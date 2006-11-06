@@ -23,21 +23,20 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 @interface DentryDirectory : Dentry {
   bool isRoot;
   bool isLeaf;
-  NSString *predicate;
+  NSPredicate *predicate;
 }
 
 - (id) initWithName: (NSString *) name
              parent: (Dentry *) aDentry
-	     handle: (FileHandle *) aHandle
-	     isLeaf: (bool) aBool
-	  predicate: (NSString *) predicate;
+	           handle: (FileHandle *) aHandle
+	           isLeaf: (bool) aBool
+	        predicate: (NSPredicate *) aPredicate;
 
 + (DentryDirectory *) root;
 
 - (bool) isRoot;
 - (NSPredicate *) buildPredicate;
-- (NSString *) buildPredicateString;
-- (NSString *) predicate;
+- (NSPredicate *) predicate;
 
 - (bool) isLeaf;
 

@@ -21,32 +21,9 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 #import "NFSServer.h"
 #import "MountServer.h"
 #import "BirchMetadataKind.h"
+#import "constants.h"
 
 @implementation BirchController
-
-const NSString *kWildcard = @"All files (perform no test)";
-
-const NSString *kBirchAutomountDefault = @"automount";
-const NSString *kBirchQueriesDefault = @"queries";
-
-const NSString *kMDComparisonDateBefore = @"Is before";
-const NSString *kMDComparisonDateAfter  = @"Is after";
-const NSString *kMDComparisonDateEqual  = @"Is";
-
-const NSString *kMDComparisonNumberEqual       = @"Equals";
-const NSString *kMDComparisonNumberNotEqual    = @"Does not equal";
-const NSString *kMDComparisonNumberLessThan    = @"Is less than";
-const NSString *kMDComparisonNumberGreaterThan = @"Is greater than";
-
-// FIXME, add a damn control for toggling case insensitivity.
-const NSString *kMDComparisonStringEqual    = @"Is";
-const NSString *kMDComparisonStringNotEqual = @"Is not";
-const NSString *kMDComparisonStringStarts   = @"Starts with";
-const NSString *kMDComparisonStringEnds     = @"Ends with";
-const NSString *kMDComparisonStringContains = @"Contains";
-
-const NSString *kMDComparisonArrayContains    = @"Contains";
-const NSString *kMDComparisonArrayNotContains = @"Does not contain";
 
 NSDictionary *gMdKeys = nil;
 
@@ -72,24 +49,24 @@ static id mdpair (NSString *str, enum BirchMetadataKind kind)
   {
     // FIXME - manage these keys in a plist or something.
     mdKeys = [[NSDictionary dictionaryWithObjectsAndKeys:
-      mdpair (nil,                               kBirchMetadataKindWildcard),
-	kWildcard,
+      mdpair (@"",                               kBirchMetadataKindWildcard),
+        kWildcard,
       //mdpair (@"kMDItemAudience",                kBirchMetadataKindArray),
-	//@"Audience",
+      //@"Audience",
       mdpair (@"kMDItemAuthors",                 kBirchMetadataKindArray),
-	@"Authors",
+      @"Authors",
       //mdpair (@"kMDItemCity",                    kBirchMetadataKindString),
-	//@"City of origin",
+      //@"City of origin",
       mdpair (@"kMDItemComment",                 kBirchMetadataKindString),
-	@"Comment",
+        @"Comment",
       mdpair (@"kMDItemContactKeywords",         kBirchMetadataKindArray),
-	@"Contacts",
+        @"Contacts",
       mdpair (@"kMDItemContentType",             kBirchMetadataKindString),
-	@"Content type",
+        @"Content type",
       //mdpair (@"kMDItemContentTypeTree",         kBirchMetadataKindArray),
-        //@"Content type tree",
+      //@"Content type tree",
       mdpair (@"kMDItemContentCreationDate",     kBirchMetadataKindDate),
-	@"Creation date",
+        @"Creation date",
       mdpair (@"kMDItemTextContent",             kBirchMetadataKindString),
         @"Content",
       mdpair (@"kMDItemContributors",            kBirchMetadataKindArray),
@@ -99,11 +76,11 @@ static id mdpair (NSString *str, enum BirchMetadataKind kind)
       mdpair (@"kMDItemCountry",                 kBirchMetadataKindString),
         @"Country",
       //mdpair (@"kMDItemCoverage",                kBirchMetadataKindString),
-        //@"Coverage",
+      //@"Coverage",
       mdpair (@"kMDItemCreator",                 kBirchMetadataKindString),
         @"Creator",
       mdpair (@"kMDItemAttributeChangeDate",     kBirchMetadataKindDate),
-	@"Date of attribute change",
+        @"Date of attribute change",
       mdpair (@"kMDItemDescription",             kBirchMetadataKindString),
         @"Description",
       mdpair (@"kMDItemDisplayName",             kBirchMetadataKindString),
@@ -123,7 +100,7 @@ static id mdpair (NSString *str, enum BirchMetadataKind kind)
       mdpair (@"kMDItemHeadline",                kBirchMetadataKindString),
         @"Headline",
       mdpair (@"kMDItemIdentifier",              kBirchMetadataKindString),
-	@"Identifer",
+        @"Identifer",
       //mdpair (@"kMDItemInstantMessageAddress",   kBirchMetadataKindArray),
         //@"Instant message address",
       //mdpair (@"kMDItemInstructions",            kBirchMetadataKindString),
@@ -135,7 +112,7 @@ static id mdpair (NSString *str, enum BirchMetadataKind kind)
       mdpair (@"kMDItemLanguages",               kBirchMetadataKindArray),
         @"Languages",
       mdpair (@"kMDItemContentModificationDate", kBirchMetadataKindDate),
-	@"Last modified date",
+        @"Last modified date",
       mdpair (@"kMDItemLastUsedDate",            kBirchMetadataKindDate),
         @"Last used date",
       mdpair (@"kMDItemNumberOfPages",           kBirchMetadataKindNumber),
@@ -167,7 +144,7 @@ static id mdpair (NSString *str, enum BirchMetadataKind kind)
     gMdKeys = mdKeys;
     mdKeyNames = [[[mdKeys allKeys]
                    sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)]
-		  retain];
+		              retain];
 
     mdComparisonsDates = [[NSArray arrayWithObjects:
       kMDComparisonDateBefore, kMDComparisonDateAfter,

@@ -67,6 +67,7 @@
 		70BA76A20AFBC72D00E2CB16 /* HeapBuffer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HeapBuffer.m; sourceTree = "<group>"; };
 		70BA77370AFBD59D00E2CB16 /* RunningQuery.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RunningQuery.h; sourceTree = "<group>"; };
 		70BA77380AFBD59D00E2CB16 /* RunningQuery.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RunningQuery.m; sourceTree = "<group>"; };
+		70C29BCC0AFE8EAD006C581C /* constants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = constants.h; sourceTree = "<group>"; };
 		70DE25810AD722A400E338E6 /* nfs_prot.x */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = nfs_prot.x; sourceTree = "<group>"; };
 		70DE25940AD7250E00E338E6 /* nfs_server.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = nfs_server.m; sourceTree = "<group>"; };
 		70DE25950AD7250E00E338E6 /* nfs_svc.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = nfs_svc.m; sourceTree = "<group>"; };
@@ -113,6 +114,7 @@
 				70BA76A20AFBC72D00E2CB16 /* HeapBuffer.m */,
 				70BA77370AFBD59D00E2CB16 /* RunningQuery.h */,
 				70BA77380AFBD59D00E2CB16 /* RunningQuery.m */,
+				70C29BCC0AFE8EAD006C581C /* constants.h */,
 			);
 			name = Classes;
 			sourceTree = "<group>";

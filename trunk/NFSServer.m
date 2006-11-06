@@ -21,6 +21,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 #import "NFSServer.h"
 #import "BirchController.h"
 #import "DentryDirectory.h"
+#import "constants.h"
 
 @implementation NFSServer
 
@@ -124,12 +125,16 @@ static NFSServer *gServer = nil;
 
 - (void) insert: (Dentry *) aDentry
 {
+  FileHandle *handle = [aDentry handle];
+  NSLog(@"mapping %@ -> %@ (%p)", handle, aDentry, dentry_cache);
   [dentry_cache setObject: aDentry forKey: [aDentry handle]];
+  
+  NSLog(@"dentry_cache is %@", dentry_cache);
 }
 
 - (RunningQuery *) runningQuery: (int) cookie
 {
-  return (BirchQuery *) [queries objectForKey: [NSNumber numberWithInt: cookie]];
+  return (RunningQuery *) [queries objectForKey: [NSNumber numberWithInt: cookie]];
 }
 
 - (void) insertRunningQuery: (RunningQuery *) aQuery
@@ -147,18 +152,19 @@ static NFSServer *gServer = nil;
   NSArray *array = nil;
   if (appController != nil)
   {
-    extern const NSString *kWildcard;
     if ([aName isEqual: @"/Birch"])
       array = [NSArray arrayWithObjects: aName,
 	       [NSNumber numberWithBool: NO],
 	       kWildcard, @"", @"",
-	       [appController queryNames]];
+	       [appController queryNames], nil];
     else
       array = [appController queryForName: aName];
   }
   
   if (array != nil)
   {
+    NSLog(@"looked up query array %@ for name %@", array, aName);
+  
     return [BirchQuery queryWithArray: array];
   }
   return nil;

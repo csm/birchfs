@@ -45,7 +45,8 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 {
   char hash[32];
   char *str = [path UTF8String];
-  
+ 
+  memset (hash, 0, 32); 
   MD5 (str, strlen (str), hash);
   
   return [FileHandle handleWithBytes: hash];
@@ -57,6 +58,11 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
   memcpy (h, handle, 32);
   [HeapBuffer bufferWithPointer: h];
   return h;
+}
+
+- (id) copyWithZone: (NSZone *) aZone
+{
+  return [[FileHandle allocWithZone: aZone] initWithBytes: handle];
 }
 
 - (BOOL) isEqual: (id) anObject

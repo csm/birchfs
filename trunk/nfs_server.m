@@ -207,32 +207,43 @@ nfsproc_lookup_2_svc(argp, rqstp)
   FileHandle *handle = [FileHandle handleWithBytes: argp->dir.data];
   DentryDirectory *dir = nil;
 
-  NSLog(@"NFS LOOKUP fh: %@ name: %@", handle, name);
+  NSLog(@"NFS LOOKUP fh: %@ name: \"%@\"", handle, name);
   
   // The file handle is always the MD5 sum (0-filled) of the full path.
-  FileHandle *target = [FileHandle handleWithPath: [NSString stringWithFormat:
-    @"%@/%@", [dir path], name]];
-  
-  Dentry *dentry = [srv lookup: handle];
+  NSString *fullpath = [NSString stringWithFormat:
+    @"%@/%@", [dir path], name];
+  FileHandle *target = [FileHandle handleWithPath: fullpath];
+  NSLog(@"target filehandle for %@ is %@", fullpath, target);
+  Dentry *dentry = [srv lookup: target];
   
   if (dentry == nil)
   {
+    NSLog(@"Nothing in dentry cache");
     BirchQuery *q = [srv queryForName: name];
     if (q == nil)
     {
-      NSPredicate *p = [[dir buildPredicateString] stringByAppendingFormat:
-        @" && kMDItemFSName == \"%@\"", name];
+      NSLog(@"looking up file named \"%@\"", name);
+      NSMutableString *mname = [NSMutableString stringWithCapacity: [name length]];
+      [mname appendString: name];
+      [mname replaceOccurrencesOfString: @"\""
+       withString: @"\\\""
+       options: 0
+       range: NSMakeRange(0, [mname length])];
+      NSPredicate *p = [NSCompoundPredicate andPredicateWithSubpredicates:
+        [NSArray arrayWithObjects: [dir buildPredicate],
+         [NSPredicate predicateWithFormat: @"kMDItemFSName == \"%@\"", mname],
+         nil]];
       NSMetadataQuery *query = [[NSMetadataQuery alloc] init];
       [query setPredicate: p];
       [query startQuery];
       while ([query isGathering])
       {
-	[NSThread sleepUntilDate: [NSDate dateWithTimeIntervalSinceNow: 1]];
+        [NSThread sleepUntilDate: [NSDate dateWithTimeIntervalSinceNow: 1]];
       }
       if ([query resultCount] == 0)
       {
-	result.status = NFSERR_NOENT;
-	return &result;
+        result.status = NFSERR_NOENT;
+        return &result;
       }
       
       // Just take the first match.
@@ -240,23 +251,25 @@ nfsproc_lookup_2_svc(argp, rqstp)
       NSString *path = [item valueForAttribute: @"kMDItemPath"];
       DentryFile *file = [[DentryFile alloc] initWithName: name
         parent: dir
-	handle: target
-	realpath: path];
+        handle: target
+        realpath: path];
       dentry = file;
     }
     else
     {
       DentryDirectory *newdir = [[DentryDirectory alloc]
         initWithName: name
-	parent: dir
-	handle: target
-	isLeaf: [q isLeaf]
-	predicate: [q predicate]];
+        parent: dir
+        handle: target
+        isLeaf: [q isLeaf]
+        predicate: [q predicate]];
       dentry = newdir;
     }
     
     [srv insert: dentry];
   }
+  
+  NSLog(@"looked up dentry %@", dentry);
   
   memset (&result, 0, sizeof (struct diropres));
   [dentry access];
@@ -478,8 +491,7 @@ nfsproc_readdir_2_svc(argp, rqstp)
     bool isLeaf = [dentry isLeaf];
     if (isLeaf)
     {
-      NSString *s = [((DentryDirectory *) dentry) buildPredicateString];
-      pred = [NSPredicate predicateWithFormat: "%@", s];
+      pred = [((DentryDirectory *) dentry) buildPredicate];
     }
     BirchQuery *q = [srv queryForName: [dentry name]];
     query = [[RunningQuery alloc] initWithCookie: cookie query: q
@@ -487,6 +499,7 @@ nfsproc_readdir_2_svc(argp, rqstp)
     [srv insertRunningQuery: query];
     [query autorelease];
   }
+  NSString *pwd = [dentry path];
   
   result.readdirres_u.reply.eof = NO;
   for (i = 0; i < argp->count; i++)
@@ -494,29 +507,55 @@ nfsproc_readdir_2_svc(argp, rqstp)
     if ([query listingDirs])
     {
       int idx = [query index];
-      NSArray *subordinates = [[query queryInfo] subordinates];
-      if (idx >= [subordinates count])
+      if (idx == 0)
       {
-	if ([query query] == nil) // not leaf
-	{
-	  result.readdirres_u.reply.eof = YES;
-	  break;
-	}
-	[query setListingDirs: NO];
+        entry *e = (entry *) malloc (sizeof (struct entry));
+        e->fileid = [[FileHandle handleWithPath: [NSString stringWithFormat: @"%@/%s", pwd, "."]] hash];
+        e->name = ".";
+        *((int *) e->cookie) = cookie;
+        e->nextentry = current;
+        current = e;
+        [HeapBuffer bufferWithPointer: e];
+        idx++;
+        [query setIndex: idx];
+        NSLog(@"    READDIR . (DIR)");
+      }
+      if (idx == 1)
+      {
+        entry *e = (entry *) malloc (sizeof (struct entry));
+        e->fileid = [[FileHandle handleWithPath: [NSString stringWithFormat: @"%@/%s", pwd, ".."]] hash];
+        e->name = "..";
+        *((int *) e->cookie) = cookie;
+        e->nextentry = current;
+        current = e;
+        [HeapBuffer bufferWithPointer: e];
+        idx++;
+        [query setIndex: idx];
+        NSLog(@"    READDIR .. (DIR)");
+      }
+      NSArray *subordinates = [[query queryInfo] subordinates];
+      if ((idx - 2) >= [subordinates count])
+      {
+        if ([query query] == nil) // not leaf
+        {
+          result.readdirres_u.reply.eof = YES;
+          break;
+        }
+        [query setListingDirs: NO];
       }
       else
       {
-	NSString *name = [subordinates objectAtIndex: idx];
-	entry *e = (entry *) malloc (sizeof (struct entry));
-	e->fileid = 0; // ?
-	e->name = [name UTF8String];
-	*((int *) e->cookie) = cookie;
-	e->nextentry = current;
-	current = e;
-	[HeapBuffer bufferWithPointer: e];
-	idx++;
-	[query setIndex: idx];
-	NSLog(@"    READDIR %@ (DIR)", name);
+        NSString *name = [subordinates objectAtIndex: (idx - 2)];
+        entry *e = (entry *) malloc (sizeof (struct entry));
+        e->fileid = [[FileHandle handleWithPath: [NSString stringWithFormat: @"%@/%@", pwd, name]] hash];
+        e->name = [name UTF8String];
+        *((int *) e->cookie) = cookie;
+        e->nextentry = current;
+        current = e;
+        [HeapBuffer bufferWithPointer: e];
+        idx++;
+        [query setIndex: idx];
+        NSLog(@"    READDIR %@ (DIR)", name);
       }
     }
     else
@@ -524,29 +563,29 @@ nfsproc_readdir_2_svc(argp, rqstp)
       NSMetadataQuery *mdq = [query query];
       while ([mdq isGathering])
       {
-	[NSThread sleepUntilDate: [NSDate dateWithTimeIntervalSinceNow: 1]];
+        [NSThread sleepUntilDate: [NSDate dateWithTimeIntervalSinceNow: 1]];
       }
       
       int idx = [query index];
       if (idx >= [mdq resultCount])
       {
-	result.readdirres_u.reply.eof = YES;
-	break;
+        result.readdirres_u.reply.eof = YES;
+        break;
       }
       else
       {
-	NSMetadataItem *item = [mdq resultAtIndex: idx];
-	NSString *name = [[item valueForAttribute: @"kMDItemPath"] lastPathComponent];
-	entry *e = (entry *) malloc (sizeof (struct entry));
-	e->fileid = 0;
-	e->name = [name UTF8String];
-	*((int *) e->cookie) = cookie;
-	e->nextentry = current;
-	current = e;
-	[HeapBuffer bufferWithPointer: e];
-	idx++;
-	[query setIndex: idx];
-	NSLog(@"    READDIR %@ (LNK)", name);
+        NSMetadataItem *item = [mdq resultAtIndex: idx];
+        NSString *name = [[item valueForAttribute: @"kMDItemPath"] lastPathComponent];
+        entry *e = (entry *) malloc (sizeof (struct entry));
+        e->fileid = [[FileHandle handleWithPath: [NSString stringWithFormat: @"%@/%@", pwd, name]] hash];
+        e->name = [name UTF8String];
+        *((int *) e->cookie) = cookie;
+        e->nextentry = current;
+        current = e;
+        [HeapBuffer bufferWithPointer: e];
+        idx++;
+        [query setIndex: idx];
+        NSLog(@"    READDIR %@ (LNK)", name);
       }
     }
   }
