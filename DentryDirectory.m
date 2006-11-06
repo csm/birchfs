@@ -34,7 +34,7 @@ extern const char kRootHandle[];
        handle: [FileHandle handleWithBytes: zero]]) != nil)
   {
     isRoot = YES;
-    predicate = nil;
+    predicate = [NSPredicate predicateWithValue: NO];
     isLeaf = NO;
   }
   
@@ -45,13 +45,13 @@ extern const char kRootHandle[];
 	     parent: (Dentry *) aParent
 	     handle: (FileHandle *) aHandle
 	     isLeaf: (bool) aBool
-	  predicate: (NSString *) aPredicate
+	  predicate: (NSPredicate *) aPredicate
 {
   if ((self = [super initWithName: aName parent: aParent handle: aHandle]) != nil)
   {
     isRoot = NO;
     isLeaf = aBool;
-    predicate = [[NSString alloc] initWithString: aPredicate];
+    predicate = [aPredicate copy];
   }
   
   return self;
@@ -59,14 +59,10 @@ extern const char kRootHandle[];
 
 + (DentryDirectory *) root
 {
-  NSLog(@"returning root dir entry");
   if (gRoot == nil)
   {
     gRoot = [[DentryDirectory alloc] initRoot];
   }
-  
-  NSLog(@"the root is %p", gRoot);
-  NSLog(@"the root is %@", gRoot);
   
   return gRoot;
 }
@@ -82,37 +78,22 @@ extern const char kRootHandle[];
   [super dealloc];
 }
 
-- (NSString *) predicate
+- (NSPredicate *) predicate
 {
-  return [NSString stringWithString: predicate];
+  return [predicate copy];
 }
 
 - (NSPredicate *) buildPredicate
 {
-  if (predicate == nil)
-    return nil;
-    
-  return [NSPredicate predicateWithFormat: @"%@", [self buildPredicateString]];
-}
-
-- (NSString *) buildPredicateString
-{
-  if (predicate == nil)
-    return nil;
-  if (parent == nil)
-    return [NSString stringWithString: predicate];
-  
-  NSString *p = [parent buildPredicateString];
-  if (p == nil)
-    return [NSString stringWithString: predicate];
-  else
-    return [NSString stringWithFormat: @"%@ && %@", p, predicate];
+  return [NSCompoundPredicate andPredicateWithSubpredicates:
+          [NSArray arrayWithObjects: [((DentryDirectory *) parent) buildPredicate],
+           predicate, nil]];
 }
 
 - (NSString *) description
 {
-  return [NSString stringWithFormat: @"DIR handle:%@ name:%@",
-    handle, name];
+  return [NSString stringWithFormat: @"DIR handle:%@ name:%@ predicate:%@",
+    handle, name, predicate];
 }
 
 - (bool) isDir

@@ -34,8 +34,8 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 
 + (BirchQuery *) queryWithArray: (NSArray *) anArray;
 + (NSPredicate *) predicateForKey: (NSString *) aKey
-  test: (NSString *) aTest
-  value: (NSString *) aValue;
+                             test: (NSString *) aTest
+                            value: (NSString *) aValue;
 
 - (NSString *) name;
 - (bool) isLeaf;

@@ -72,7 +72,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
   NSDate *now = [[NSDate alloc] init];
   NSDate *then = accessed;
   accessed = now;
-  [accessed release];
+  [then release];
 }
 
 - (NSDate *) accessedTime

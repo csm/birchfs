@@ -19,26 +19,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 
 #import "BirchQuery.h"
 #import "BirchMetadataKind.h"
-
-extern const NSString *kWildcard;
-
-extern const NSString *kMDComparisonDateBefore;
-extern const NSString *kMDComparisonDateAfter;
-extern const NSString *kMDComparisonDateEqual;
-
-extern const NSString *kMDComparisonNumberEqual;
-extern const NSString *kMDComparisonNumberNotEqual;
-extern const NSString *kMDComparisonNumberLessThan;
-extern const NSString *kMDComparisonNumberGreaterThan;
-
-extern const NSString *kMDComparisonStringEqual;
-extern const NSString *kMDComparisonStringNotEqual;
-extern const NSString *kMDComparisonStringStarts;
-extern const NSString *kMDComparisonStringEnds;
-extern const NSString *kMDComparisonStringContains;
-
-extern const NSString *kMDComparisonArrayContains;
-extern const NSString *kMDComparisonArrayNotContains;
+#import "constants.h"
 
 extern NSDictionary *gMdKeys;
 
@@ -51,24 +32,27 @@ extern NSDictionary *gMdKeys;
 {
   if ((self = [super init]) != nil)
   {
-    name = [[NSString alloc] initWithName: aName];
+    name = [[NSString alloc] initWithString: aName];
     isLeaf = aBool;
-    predicate = [[NSString alloc] initWithName: aPredicate];
+    predicate = [[NSString alloc] initWithString: aPredicate];
     subordinates = [[NSArray alloc] initWithArray: anArray];
   }
   
   return self;
 }
 
-+ (NSString *) predicateForKey: (NSString *) aKey
-  test: (NSString *) aTest
-  value: (NSString *) aValue
++ (NSPredicate *) predicateForKey: (NSString *) aKey
+                             test: (NSString *) aTest
+                            value: (NSString *) aValue
 {
   NSArray *pair = [gMdKeys objectForKey: aKey];
   if (pair == nil)
   {
     return @"kMDItemFSName == ':'";
   }
+
+  NSLog(@"gMdKeys are %@", gMdKeys);
+  NSLog(@"predicateForKey %@ %@ %@ %@", aKey, aTest, aValue, pair);
   
   enum BirchMetadataKind kind = (enum BirchMetadataKind)
     [((NSNumber *) [pair objectAtIndex: 1]) intValue];
@@ -87,87 +71,87 @@ extern NSDictionary *gMdKeys;
     case kBirchMetadataKindArray:
       if ([aTest isEqual: kMDComparisonArrayContains] && [aValue length] > 0)
       {
-	test = @"==";
-	valPrefix = @"\"*";
-	valSuffix = @"*\"";
-	value = aValue;
-	suffix = @"c";
+        test = @"==";
+        valPrefix = @"\"*";
+        valSuffix = @"*\"";
+        value = aValue;
+        suffix = @"c";
       }
       else if ([aTest isEqual: kMDComparisonArrayNotContains]
                && [aValue length] > 0)
       {
-	test = @"!=";
-	valPrefix = @"\"*";
-	valSuffix = @"*\"";
-	value = aValue;
-	suffix = @"c";
+        test = @"!=";
+        valPrefix = @"\"*";
+        valSuffix = @"*\"";
+        value = aValue;
+        suffix = @"c";
       }
       else
       {
-	// Choose something always false.
-	key = @"kMDItemFSName";
-	test = @"==";
-	value = @":";
+        // Choose something always false.
+        key = @"kMDItemFSName";
+        test = @"==";
+        value = @":";
       }
       break;
     
     case kBirchMetadataKindDate:
       {
-	NSDate *date = [NSDate dateWithNaturalLanguageString: aValue];
-	NSTimeInterval seconds = [date timeIntervalSince1970];
-	value = [NSString stringWithFormat: @"%f", seconds];
+        NSDate *date = [NSDate dateWithNaturalLanguageString: aValue];
+        NSTimeInterval seconds = [date timeIntervalSince1970];
+        value = [NSString stringWithFormat: @"%f", seconds];
 	
-	if ([aTest isEqual: kMDComparisonDateBefore])
-	{
-	  test = @"<";
-	}
-	else if ([aTest isEqual: kMDComparisonDateAfter])
-	{
-	  test = @">";
-	}
-	else
-	{
-	  test = @"==";
-	}
+        if ([aTest isEqual: kMDComparisonDateBefore])
+        {
+          test = @"<";
+        }
+        else if ([aTest isEqual: kMDComparisonDateAfter])
+        {
+          test = @">";
+        }
+        else
+        {
+          test = @"==";
+        }
       }
       break;
 
     case kBirchMetadataKindString:
       if ([aValue length] == 0)
       {
-	// Choose something always false.
-	key = @"kMDItemFSName";
-	test = @"==";
-	value = @":";      
+        // Choose something always false.
+        key = @"kMDItemFSName";
+        test = @"==";
+        value = @":";      
       }
       else
       {
-	suffix = @"c";
-	value = aValue;
-	if ([aTest isEqual: kMDComparisonStringEqual])
-	{
-	  test = @"==";
-	}
-	else if ([aTest isEqual: kMDComparisonStringNotEqual])
-	{
-	  test = @"!=";
-	}
-	else if ([aTest isEqual: kMDComparisonStringStarts])
-	{
-	  test = @"==";
-	  valSuffix = @"*";
-	}
-	else if ([aTest isEqual: kMDComparisonStringEnds])
-	{
-	  test = @"==";
-	  valPrefix = @"*";
-	}
-	else if ([aTest isEqual: kMDComparisonStringContains])
-	{
-	  test = @"==";
-	  valPrefix = @"*";
-	  valSuffix = @"*";
-	}
+        suffix = @"c";
+        value = aValue;
+        if ([aTest isEqual: kMDComparisonStringEqual])
+        {
+          test = @"==";
+        }
+        else if ([aTest isEqual: kMDComparisonStringNotEqual])
+        {
+          test = @"!=";
+        }
+        else if ([aTest isEqual: kMDComparisonStringStarts])
+        {
+          test = @"==";
+          valSuffix = @"*";
+        }
+        else if ([aTest isEqual: kMDComparisonStringEnds])
+        {
+          test = @"==";
+          valPrefix = @"*";
+        }
+        else if ([aTest isEqual: kMDComparisonStringContains])
+        {
+          test = @"==";
+          valPrefix = @"*";
+          valSuffix = @"*";
+        }
       }
       break;
 
@@ -175,25 +159,31 @@ extern NSDictionary *gMdKeys;
       value = aValue;
       if ([aTest isEqual: kMDComparisonNumberEqual])
       {
-	test = @"==";
+        test = @"==";
       }
       else if ([aTest isEqual: kMDComparisonNumberNotEqual])
       {
-	test = @"!=";
+        test = @"!=";
       }
       else if ([aTest isEqual: kMDComparisonNumberLessThan])
       {
-	test = @"<";
+        test = @"<";
       }
       else if ([aTest isEqual: kMDComparisonNumberGreaterThan])
       {
-	test = @">";
+        test = @">";
       }
       break;
   }
   
-  return [NSString stringWithFormat: @"%@ %@ \"%@%@%@\"%@", key, test, valPrefix,
-          value, valSuffix, suffix];
+  NSMutableString *mvalue = [NSMutableString stringWithCapacity: [value length]];
+  [mvalue appendString: value];
+  [mvalue replaceOccurrencesOfString: @"\""
+   withString: @"\\\""
+   options: 0
+   range: NSMakeRange(0, [mvalue length])];
+  return [NSPredicate predicateWithFormat: @"%@ %@ %@%@%@%@", key, test,
+          valPrefix, mvalue, valSuffix, suffix];
 }
 
 + (BirchQuery *) queryWithArray: (NSArray *) anArray
