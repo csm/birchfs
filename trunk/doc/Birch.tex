@@ -83,8 +83,8 @@ directory names are used to form queries by referencing
 
 Tagging, in which users add keyword-style categorizations of files, is
 extremely popular in recent web sites such as Flickr and delicious,
-and can form ad-hoc user-generated taxonomies. Tags are put into use
-in the TagFS system \cite{Bloehdorn:2006}.
+and can form ad-hoc user-generated taxonomies \cite{Mathes:2004}. Tags
+are put into use in the TagFS system \cite{Bloehdorn:2006}.
 
 The Spotlight system built in to Mac OS X, starting with version 10.4,
 provides a rich language for interacting with various file
@@ -244,10 +244,10 @@ query names. A request for a path, say \texttt{/Kind is PDF/Authors
 to the predicate \texttt{kMDItemKind == 'PDF'}, and the query named
 ``Authors contains Knuth'' corresponds to the predicate
 \texttt{kMDItemAuthors == '*Knuth*'}, the compound predicate for the
-path would be \texttt{kMDItemKind == 'PDF' \&\& kMDItemAuthors ==
-  '*Knuth*'}. If either query has its \textit{isLeaf} attribute set to
-true, then the path will display all results that match the
-conjunction.
+path would be \texttt{kMDItemKind == 'PDF Document' \&\&
+  kMDItemAuthors == '*Knuth*'}. If either query has its
+\textit{isLeaf} attribute set to true, then the path will display all
+results that match the conjunction.
 
 In order to simplify the implementation of the NFS server, no I/O
 requests are handled by the NFS server itself. Instead, files

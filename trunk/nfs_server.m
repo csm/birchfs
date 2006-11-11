@@ -28,7 +28,9 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 
 #import "Dentry.h"
 #import "DentryDirectory.h"
+#import "DentryEmptyfile.h"
 #import "DentryFile.h"
+#import "DentryMetafile.h"
 #import "HeapBuffer.h"
 
 /*
@@ -146,13 +148,58 @@ nfsproc_getattr_2_svc(argp, rqstp)
       attr->mtime.seconds = [[d modifiedTime] timeIntervalSince1970];
       attr->mtime.useconds = 0;
     }
+    else if ([d isKindOfClass: [DentryEmptyfile class]])
+    {
+      result.status = NFS_OK;
+      fattr *attr = &(result.attrstat_u.attributes);
+      attr->type = NFREG;
+      attr->mode = NFSMODE_REG | 0444;
+      attr->nlink = 1;
+      attr->uid = getuid();
+      attr->gid = getgid();
+      attr->size = 0;
+      attr->blocksize = 1024;
+      attr->rdev = 0;
+      attr->blocks = 1;
+      attr->fsid = 1;
+      attr->fileid = [handle hash];
+      attr->atime.seconds = [[d accessedTime] timeIntervalSince1970];
+      attr->atime.useconds = 0;
+      attr->ctime.seconds = [[d createdTime] timeIntervalSince1970];
+      attr->ctime.useconds = 0;
+      attr->mtime.seconds = [[d modifiedTime] timeIntervalSince1970];
+      attr->mtime.useconds = 0;
+    }
+    else if ([d isKindOfClass: [DentryMetafile class]])
+    {
+      result.status = NFS_OK;
+      fattr *attr = &(result.attrstat_u.attributes);
+      DentryMetafile *file = (DentryMetafile *) d;
+      attr->type = NFREG;
+      attr->mode = NFSMODE_REG | 0666;
+      attr->nlink = 1;
+      attr->uid = getuid();
+      attr->gid = getgid();
+      attr->size = [file size];
+      attr->blocksize = 1024;
+      attr->rdev = 0;
+      attr->blocks = (attr->size + 1023) / 1024;
+      attr->fsid = 1;
+      attr->fileid = [handle hash];
+      attr->atime.seconds = [[d accessedTime] timeIntervalSince1970];
+      attr->atime.useconds = 0;
+      attr->ctime.seconds = [[d createdTime] timeIntervalSince1970];
+      attr->ctime.useconds = 0;
+      attr->mtime.seconds = [[d modifiedTime] timeIntervalSince1970];
+      attr->mtime.useconds = 0;
+    }
     else
     {
       result.status = NFS_OK;
       fattr *attr = &(result.attrstat_u.attributes);
       DentryFile *file = (DentryFile *) d;
       attr->type = NFLNK;
-      attr->mode = NFSMODE_LNK | 0666;
+      attr->mode = NFSMODE_LNK | 0444;
       attr->nlink = 1;
       attr->uid = getuid();
       attr->gid = getgid();
@@ -180,8 +227,65 @@ nfsproc_setattr_2_svc(argp, rqstp)
 	struct svc_req *rqstp;
 {
   static attrstat result;
-  NSLog(@"NFS SETATTR");
-  result.status = NFSERR_PERM;
+  FileHandle *handle = [FileHandle handleWithBytes: argp->file.data];
+  NFSServer *srv = [NFSServer server];
+  Dentry *dentry = [srv lookup: handle];
+  
+  NSLog(@"NFS SETATTR %@", handle);
+  
+  if (dentry == nil)
+  {
+    result.status = NFSERR_STALE;
+    return &result;
+  }
+
+  [dentry access];
+  if ([dentry isKindOfClass: [DentryMetafile class]])
+  {
+    [((DentryMetafile *) dentry) truncate: argp->attributes.size];
+  }
+
+  result.status = NFS_OK;
+  fattr *attr = &(result.attrstat_u.attributes);
+  attr->nlink = 1;
+  attr->uid = getuid();
+  attr->gid = getgid();
+  attr->blocksize = 1024;
+  attr->rdev = 0;
+  attr->atime.seconds = [[dentry accessedTime] timeIntervalSince1970];
+  attr->ctime.seconds = [[dentry createdTime] timeIntervalSince1970];
+  attr->mtime.seconds = [[dentry modifiedTime] timeIntervalSince1970];
+  if ([dentry isKindOfClass: [DentryDirectory class]])
+  {
+    attr->type = NFDIR;
+    attr->mode = NFSMODE_DIR | 0777;
+    attr->size = 1;
+    attr->blocks = 1;
+  }
+  else if ([dentry isKindOfClass: [DentryEmptyfile class]])
+  {
+    attr->type = NFREG;
+    attr->mode = NFSMODE_REG | 0444;
+    attr->size = 0;
+    attr->blocks = 1;
+  }
+  else if ([dentry isKindOfClass: [DentryMetafile class]])
+  {
+    DentryMetafile *m = (DentryMetafile *) dentry;
+    attr->type = NFREG;
+    attr->mode = NFSMODE_REG | 0666;
+    attr->size = [m size];
+    attr->blocks = (attr->size + 1023) / 1024;
+  }
+  else // A file
+  {
+    DentryFile *f = (DentryFile *) dentry;
+    attr->type = NFLNK;
+    attr->mode = NFSMODE_LNK | 0666;
+    attr->size = [[f realpath] length]; // XXX UTF-8
+    attr->blocks = (attr->size + 1023) / 1024;
+  }
+
   return(&result);
 }
 
@@ -205,16 +309,76 @@ nfsproc_lookup_2_svc(argp, rqstp)
 		    encoding: NSUTF8StringEncoding];
   NFSServer *srv = [NFSServer server];
   FileHandle *handle = [FileHandle handleWithBytes: argp->dir.data];
+  Dentry *dirdentry = [srv lookup: handle];
+  FileHandle *target = nil;
+    
+  if (dirdentry == nil)
+  {
+    result.status = NFSERR_STALE;
+    return &result;
+  }
+
   DentryDirectory *dir = nil;
+  if ([dirdentry isDir])
+  {
+    dir = (DentryDirectory *) dirdentry;
+  }
+  else
+  {
+    result.status = NFSERR_NOTDIR;
+    return &result;
+  }
 
   NSLog(@"NFS LOOKUP fh: %@ name: \"%@\"", handle, name);
   
-  // The file handle is always the MD5 sum (0-filled) of the full path.
+  Dentry *dentry = nil;
   NSString *fullpath = [NSString stringWithFormat:
     @"%@/%@", [dir path], name];
-  FileHandle *target = [FileHandle handleWithPath: fullpath];
+  if ([name isEqual: @"."])
+  {
+    dentry = dir;
+    target = handle;
+  }
+  else if ([name isEqual: @".."])
+  {
+    dentry = [dir parent];
+    target = [dentry handle];
+  }
+  else if ([name isEqual: @".metadata_never_index"])
+  {
+    target = [FileHandle handleWithPath: fullpath];
+    dentry = [srv lookup: target];
+    if (dentry == nil)
+    {
+      DentryEmptyfile *empty = [[DentryEmptyfile alloc]
+        initWithName: @".metadata_never_index"
+        parent: dir
+        handle: target];
+      [srv insert: empty];
+      dentry = empty;
+    }
+  }
+  else if ([name isEqual: @".DS_Store"] || [name hasPrefix: @"._"])
+  {
+    target = [FileHandle handleWithPath: fullpath];
+    dentry = [srv lookup: target];
+    if (dentry == nil)
+    {
+      DentryMetafile *meta = [[DentryMetafile alloc]
+        initWithName: name
+        parent: dir
+        handle: target];
+      [srv insert: meta];
+      dentry = meta;
+    }
+  }
+  else
+  {
+    // The file handle is always the MD5 sum of the full path.
+    target = [FileHandle handleWithPath: fullpath];
+    dentry = [srv lookup: target];
+  }
   NSLog(@"target filehandle for %@ is %@", fullpath, target);
-  Dentry *dentry = [srv lookup: target];
   
   if (dentry == nil)
   {
@@ -222,23 +386,24 @@ nfsproc_lookup_2_svc(argp, rqstp)
     BirchQuery *q = [srv queryForName: name];
     if (q == nil)
     {
+      if ([dir isRoot])
+      {
+      	result.status = NFSERR_NOENT;
+        return &result;
+      }
       NSLog(@"looking up file named \"%@\"", name);
-      NSMutableString *mname = [NSMutableString stringWithCapacity: [name length]];
-      [mname appendString: name];
-      [mname replaceOccurrencesOfString: @"\""
-       withString: @"\\\""
-       options: 0
-       range: NSMakeRange(0, [mname length])];
       NSPredicate *p = [NSCompoundPredicate andPredicateWithSubpredicates:
         [NSArray arrayWithObjects: [dir buildPredicate],
-         [NSPredicate predicateWithFormat: @"kMDItemFSName == \"%@\"", mname],
+         [NSPredicate predicateWithFormat: @"kMDItemFSName == %@", name],
          nil]];
       NSMetadataQuery *query = [[NSMetadataQuery alloc] init];
       [query setPredicate: p];
       [query startQuery];
-      while ([query isGathering])
+      if ([query isGathering] && [query resultCount] == 0)
       {
-        [NSThread sleepUntilDate: [NSDate dateWithTimeIntervalSinceNow: 1]];
+        NSLog(@"query %@ is gathering...", [query predicate]);
+        [[NSRunLoop currentRunLoop] runUntilDate:
+         [NSDate dateWithTimeIntervalSinceNow: 5]];
       }
       if ([query resultCount] == 0)
       {
@@ -291,6 +456,21 @@ nfsproc_lookup_2_svc(argp, rqstp)
     attr->size = 1;
     attr->blocks = 1;
   }
+  else if ([dentry isKindOfClass: [DentryEmptyfile class]])
+  {
+    attr->type = NFREG;
+    attr->mode = NFSMODE_REG | 0444;
+    attr->size = 0;
+    attr->blocks = 1;
+  }
+  else if ([dentry isKindOfClass: [DentryMetafile class]])
+  {
+    DentryMetafile *m = (DentryMetafile *) dentry;
+    attr->type = NFREG;
+    attr->mode = NFSMODE_REG | 0666;
+    attr->size = [m size];
+    attr->blocks = (attr->size + 1023) / 1024;
+  }
   else // A file
   {
     DentryFile *f = (DentryFile *) dentry;
@@ -323,10 +503,14 @@ nfsproc_readlink_2_svc(argp, rqstp)
   {
     result.status = NFSERR_ISDIR;
   }
-  else
+  else if ([dentry isKindOfClass: [DentryFile class]])
   {
     DentryFile *file = (DentryFile *) dentry;
     result.readlinkres_u.data = [[file realpath] UTF8String];
+  }
+  else // Not a symbolic link.
+  {
+    result.status = NFSERR_INVAL;
   }
 
   return(&result);
@@ -338,25 +522,96 @@ nfsproc_read_2_svc(argp, rqstp)
 	struct svc_req *rqstp;
 {
   static readres  result;
+  static char databuf[1024];
 
   FileHandle *handle = [FileHandle handleWithBytes: argp->file.data];
-  Dentry *dentry = [[NFSServer server] lookup: handle];
+  NFSServer *srv = [NFSServer server];
+  Dentry *dentry = [srv lookup: handle];
 
   NSLog(@"NFS READ %@", handle);
   
   if (dentry == nil)
   {
     result.status = NFSERR_STALE;
+    return &result;
   }
-  else if ([dentry isDir])
+  
+  if ([dentry isDir])
   {
     result.status = NFSERR_ISDIR;
+    return &result;
   }
-  else
+  else if ([dentry isKindOfClass: [DentryFile class]])
   {
     // Can you read from a symlink?
     result.status = NFSERR_INVAL;
+    return &result;
   }
+  
+  [dentry access];
+  if ([dentry isKindOfClass: [DentryEmptyfile class]])
+  {
+    if (argp->offset != 0)
+    {
+      result.status = NFSERR_INVAL;
+      return &result;
+    }
+    
+    result.status = NFS_OK;
+    readokres *okres = &(result.readres_u.reply);
+    fattr *attr = &(result.readres_u.reply.attributes);
+    attr->type = NFREG;
+    attr->mode = NFSMODE_REG | 0444;
+    attr->nlink = 1;
+    attr->uid = getuid();
+    attr->gid = getgid();
+    attr->size = 0;
+    attr->blocksize = 1024;
+    attr->rdev = 0;
+    attr->blocks = 1;
+    attr->fsid = 1;
+    attr->fileid = [handle hash];
+    attr->atime.seconds = [[dentry accessedTime] timeIntervalSince1970];
+    attr->atime.useconds = 0;
+    attr->ctime.seconds = [[dentry createdTime] timeIntervalSince1970];
+    attr->ctime.useconds = 0;
+    attr->mtime.seconds = [[dentry modifiedTime] timeIntervalSince1970];
+    attr->mtime.useconds = 0;
+    
+    okres->data.data_len = 0;
+    okres->data.data_val = databuf;
+    
+    return &result;
+  }
+  
+  DentryMetafile *mfile = (DentryMetafile *) dentry;
+  result.status = NFS_OK;
+  readokres *okres = &(result.readres_u.reply);
+  fattr *attr = &(result.readres_u.reply.attributes);
+
+  int len = sizeof(databuf);
+  if (len > argp->count)
+    len = argp->count;
+  okres->data.data_len = [mfile readData: databuf atOffset: argp->offset length: len];
+  okres->data.data_val = databuf;
+
+  attr->type = NFREG;
+  attr->mode = NFSMODE_REG | 0666;
+  attr->nlink = 1;
+  attr->uid = getuid();
+  attr->gid = getgid();
+  attr->size = [mfile size];
+  attr->blocksize = 1024;
+  attr->rdev = 0;
+  attr->blocks = (attr->size + 1023) / 1024;
+  attr->fsid = 1;
+  attr->fileid = [handle hash];
+  attr->atime.seconds = [[dentry accessedTime] timeIntervalSince1970];
+  attr->atime.useconds = 0;
+  attr->ctime.seconds = [[dentry createdTime] timeIntervalSince1970];
+  attr->ctime.useconds = 0;
+  attr->mtime.seconds = [[dentry modifiedTime] timeIntervalSince1970];
+  attr->mtime.useconds = 0;
 
   return(&result);
 }
@@ -377,8 +632,54 @@ nfsproc_write_2_svc(argp, rqstp)
 	struct svc_req *rqstp;
 {
   static attrstat result;
-  NSLog(@"NFS WRITE");
-  result.status = NFSERR_PERM; // XXX suck a fuck
+  FileHandle *handle = [FileHandle handleWithBytes: argp->file.data];
+  NFSServer *srv = [NFSServer server];
+  Dentry *dentry = [srv lookup: handle];
+  NSLog(@"NFS WRITE %@", handle);
+  
+  if (dentry == nil)
+  {
+    result.status = NFSERR_STALE;
+    return &result;
+  }
+  
+  if ([dentry isDir])
+  {
+    result.status = NFSERR_ISDIR;
+    return &result;
+  }
+  else if (![dentry isKindOfClass: [DentryMetafile class]])
+  {
+    result.status = NFSERR_PERM; // XXX suck a fuck
+    return &result;
+  }
+  
+  DentryMetafile *mfile = (DentryMetafile *) dentry;
+  [mfile writeData: [NSData dataWithBytesNoCopy: argp->data.data_val
+                     length: argp->data.data_len
+                     freeWhenDone: NO] atOffset: argp->offset];
+  [mfile access];
+  [mfile modify];
+           
+  result.status = NFS_OK;
+  fattr *attr = &(result.attrstat_u.attributes);
+  attr->type = NFREG;
+  attr->mode = NFSMODE_REG | 0666;
+  attr->nlink = 1;
+  attr->uid = getuid();
+  attr->gid = getgid();
+  attr->size = [mfile size];
+  attr->blocksize = 1024;
+  attr->rdev = 0;
+  attr->blocks = (attr->size + 1023) / 1024;
+  attr->fsid = 1;
+  attr->fileid = [[mfile handle] hash];
+  attr->atime.seconds = [[mfile accessedTime] timeIntervalSince1970];
+  attr->atime.useconds = 0;
+  attr->mtime.seconds = [[mfile modifiedTime] timeIntervalSince1970];
+  attr->mtime.useconds = 0;
+  attr->ctime.seconds = [[mfile createdTime] timeIntervalSince1970];
+  attr->ctime.useconds = 0;
   return(&result);
 }
 
@@ -442,9 +743,29 @@ nfsproc_mkdir_2_svc(argp, rqstp)
 	createargs *argp;
 	struct svc_req *rqstp;
 {
-  static diropres  result;
-  result.status = NFSERR_PERM;
-  NSLog(@"NFS MKDIR");
+  static diropres result;
+  FileHandle *handle = [FileHandle handleWithBytes: argp->where.dir.data];
+  NFSServer *srv = [NFSServer server];
+  Dentry *dentry = [srv lookup: handle];
+  NSString *name = [NSString stringWithUTF8String: argp->where.name];
+  
+  NSLog(@"NFS MKDIR handle:%@ name:%@", handle, name);
+
+  if (dentry == nil)
+  {
+    result.status = NFSERR_STALE;
+    return &result;
+  }
+  
+  if (![dentry isDir])
+  {
+    result.status = NFSERR_NOTDIR;
+    return &result;
+  }
+
+  [srv addQueryWithName: name toDir: [dentry name]];
+  
+  result.status = NFS_OK;
   return(&result);
 }
 
@@ -458,6 +779,8 @@ nfsproc_rmdir_2_svc(argp, rqstp)
   return(&result);
 }
 
+#define NUM_SPECIALS 3
+
 readdirres *
 nfsproc_readdir_2_svc(argp, rqstp)
 	readdirargs *argp;
@@ -467,12 +790,13 @@ nfsproc_readdir_2_svc(argp, rqstp)
   int i;
   int cookie = *((int *) (argp->cookie));
   NFSServer *srv = [NFSServer server];
-  RunningQuery *query = [srv runningQuery: cookie];
   FileHandle *handle = [FileHandle handleWithBytes: argp->dir.data];
   Dentry *dentry = [srv lookup: handle];
   entry *current = NULL;
+  entry *bottom = NULL;
   
-  NSLog(@"NFS READDIR handle: %@ count: %d", handle, argp->count);
+  NSLog(@"NFS READDIR handle: %@ count: %d cookie: %x", handle, argp->count,
+        cookie);
   
   if (dentry == nil)
   {
@@ -484,11 +808,14 @@ nfsproc_readdir_2_svc(argp, rqstp)
     result.status = NFSERR_NOTDIR;
     return &result;
   }
+  [dentry access];
   
+  RunningQuery *query = [srv runningQueryForHandle: handle];
+
   if (query == nil)
   {
     NSPredicate *pred = nil;
-    bool isLeaf = [dentry isLeaf];
+    bool isLeaf = [((DentryDirectory *) dentry) isLeaf];
     if (isLeaf)
     {
       pred = [((DentryDirectory *) dentry) buildPredicate];
@@ -496,45 +823,112 @@ nfsproc_readdir_2_svc(argp, rqstp)
     BirchQuery *q = [srv queryForName: [dentry name]];
     query = [[RunningQuery alloc] initWithCookie: cookie query: q
 	     predicate: pred];
-    [srv insertRunningQuery: query];
+    [srv insertRunningQuery: query forHandle: handle];
     [query autorelease];
   }
   NSString *pwd = [dentry path];
+
+  [query setListingDirs: (cookie & 0x80000000) == 0];
+  int cookieIndex = (cookie & ~0x80000000);
+  if (![query listingDirs] || cookieIndex != 0)
+    cookieIndex++;
+  [query setIndex: cookieIndex];
   
   result.readdirres_u.reply.eof = NO;
-  for (i = 0; i < argp->count; i++)
+  bool updatedQuery = NO;
+  bool gaveUp = NO;
+  for (i = 0; i < argp->count; )
   {
+    NSLog(@"i:%d", i);
     if ([query listingDirs])
     {
       int idx = [query index];
+      NSLog(@"DIRS idx:%d", idx);
       if (idx == 0)
       {
         entry *e = (entry *) malloc (sizeof (struct entry));
-        e->fileid = [[FileHandle handleWithPath: [NSString stringWithFormat: @"%@/%s", pwd, "."]] hash];
+        e->fileid = [[FileHandle handleWithPath:
+          [NSString stringWithFormat: @"%@/.", pwd]] hash];
         e->name = ".";
-        *((int *) e->cookie) = cookie;
-        e->nextentry = current;
-        current = e;
-        [HeapBuffer bufferWithPointer: e];
+        *((int *) e->cookie) = idx;
+        e->nextentry = NULL;
+        if (current == NULL)
+        {
+          current = e;
+          bottom = current;
+        }
+        else
+        {
+          current->nextentry = e;
+          current = e;
+        }
+        [NSData dataWithBytesNoCopy: e
+         length: sizeof(entry)
+         freeWhenDone: YES];
         idx++;
         [query setIndex: idx];
         NSLog(@"    READDIR . (DIR)");
+        i += 1;
+        continue;
       }
       if (idx == 1)
       {
         entry *e = (entry *) malloc (sizeof (struct entry));
-        e->fileid = [[FileHandle handleWithPath: [NSString stringWithFormat: @"%@/%s", pwd, ".."]] hash];
+        e->fileid = [[FileHandle handleWithPath:
+          [NSString stringWithFormat: @"%@/..", pwd]] hash];
         e->name = "..";
-        *((int *) e->cookie) = cookie;
-        e->nextentry = current;
-        current = e;
-        [HeapBuffer bufferWithPointer: e];
+        *((int *) e->cookie) = idx;
+        e->nextentry = NULL;
+        if (current == NULL)
+        {
+          current = e;
+          bottom = current;
+        }
+        else
+        {
+          current->nextentry = e;
+          current = e;
+        }
+        [NSData dataWithBytesNoCopy: e
+         length: sizeof(entry)
+         freeWhenDone: YES];
         idx++;
         [query setIndex: idx];
         NSLog(@"    READDIR .. (DIR)");
+        i += 2;
+        continue;
       }
+      if (idx == 2)
+      {
+        entry *e = (entry *) malloc (sizeof (struct entry));
+        e->fileid = [[FileHandle handleWithPath:
+          [NSString stringWithFormat: @"%@/.metadata_never_index", pwd]] hash];
+        e->name = ".metadata_never_index";
+        *((int *) e->cookie) = idx;
+        e->nextentry = NULL;
+        if (current == NULL)
+        {
+          current = e;
+          bottom = current;
+        }
+        else
+        {
+          current->nextentry = e;
+          current = e;
+        }
+        [NSData dataWithBytesNoCopy: e
+         length: sizeof(entry)
+         freeWhenDone: YES];
+        idx++;
+        [query setIndex: idx];
+        NSLog(@"    READDIR .metadata_never_index (EFILE)");
+        i += strlen(".metadata_never_index");
+        continue;
+      }
+
       NSArray *subordinates = [[query queryInfo] subordinates];
-      if ((idx - 2) >= [subordinates count])
+      NSLog(@"looking at subordintes %@", subordinates);
+      if ((idx - NUM_SPECIALS) >= [subordinates count])
       {
         if ([query query] == nil) // not leaf
         {
@@ -542,60 +936,124 @@ nfsproc_readdir_2_svc(argp, rqstp)
           break;
         }
         [query setListingDirs: NO];
+        [query setIndex: 0];
       }
       else
       {
-        NSString *name = [subordinates objectAtIndex: (idx - 2)];
+        NSString *name = [subordinates objectAtIndex: (idx - NUM_SPECIALS)];
         entry *e = (entry *) malloc (sizeof (struct entry));
         e->fileid = [[FileHandle handleWithPath: [NSString stringWithFormat: @"%@/%@", pwd, name]] hash];
         e->name = [name UTF8String];
-        *((int *) e->cookie) = cookie;
-        e->nextentry = current;
-        current = e;
-        [HeapBuffer bufferWithPointer: e];
+        *((int *) e->cookie) = idx;
+        e->nextentry = NULL;
+        if (current == NULL)
+        {
+          current = e;
+          bottom = current;
+        }
+        else
+        {
+          current->nextentry = e;
+          current = e;
+        }
+        [NSData dataWithBytesNoCopy: e
+         length: sizeof(entry)
+         freeWhenDone: YES];
         idx++;
         [query setIndex: idx];
         NSLog(@"    READDIR %@ (DIR)", name);
+        i += strlen(e->name);
       }
     }
     else
     {
+      //NSLog(@"listing query matches...");
       NSMetadataQuery *mdq = [query query];
-      while ([mdq isGathering])
+      gaveUp = [query shouldGiveUp];
+      if (!gaveUp && [mdq isGathering] && !updatedQuery)
       {
-        [NSThread sleepUntilDate: [NSDate dateWithTimeIntervalSinceNow: 1]];
+        NSLog(@"query is gathering; running NSRunLoop...");
+        [[NSRunLoop currentRunLoop] runUntilDate:
+          [NSDate dateWithTimeIntervalSinceNow: 1]];
+        NSLog(@"NSRunLoop exits");
+        updatedQuery = YES;
+        NSLog(@"we have %d maches for %@", [mdq resultCount], [mdq predicate]);
+        [query loop];
       }
-      
+
       int idx = [query index];
+      NSLog(@"FILES:%d", idx);
+      //NSLog(@"idx is now %d of a possible", idx, [mdq resultCount]);
       if (idx >= [mdq resultCount])
       {
-        result.readdirres_u.reply.eof = YES;
+        if (![mdq isGathering] || gaveUp)
+          result.readdirres_u.reply.eof = YES;
         break;
       }
       else
       {
         NSMetadataItem *item = [mdq resultAtIndex: idx];
-        NSString *name = [[item valueForAttribute: @"kMDItemPath"] lastPathComponent];
+        NSString *realpath = [item valueForAttribute: @"kMDItemPath"];
+        NSString *name = [realpath lastPathComponent];
+        NSString *mypath = [NSString stringWithFormat: @"%@/%@", pwd, name];
+        FileHandle *filehandle = [FileHandle handleWithPath: mypath];
+                
+        // Bleah.
+        //NSLog(@"DentryFile initWithName: %@ parent: %@ handle: %@ realpath: %@",
+        //      name, dentry, filehandle, realpath);
+        DentryFile *newfile = [[DentryFile alloc] initWithName: name
+          parent: dentry
+          handle: filehandle
+          realpath: realpath];
+        [newfile autorelease];
+        //NSLog(@"created file dentry %@", newfile);
+        [srv insert: newfile];
+        
         entry *e = (entry *) malloc (sizeof (struct entry));
-        e->fileid = [[FileHandle handleWithPath: [NSString stringWithFormat: @"%@/%@", pwd, name]] hash];
+        e->fileid = [filehandle hash];
         e->name = [name UTF8String];
-        *((int *) e->cookie) = cookie;
-        e->nextentry = current;
-        current = e;
-        [HeapBuffer bufferWithPointer: e];
+        *((int *) e->cookie) = 0x80000000 | idx;
+        e->nextentry = NULL;
+        if (current == NULL)
+        {
+          current = e;
+          bottom = current;
+        }
+        else
+        {
+          current->nextentry = e;
+          current = e;
+        }
+        [NSData dataWithBytesNoCopy: e
+         length: sizeof(entry)
+         freeWhenDone: YES];
         idx++;
         [query setIndex: idx];
         NSLog(@"    READDIR %@ (LNK)", name);
+        i += strlen(e->name);
       }
     }
   }
   
   if (result.readdirres_u.reply.eof)
   {
-    [srv removeRunningQuery: cookie];
+    NSLog(@"readdir EOF; removing the query");
+    [srv removeRunningQueryForHandle: handle];
   }
   
-  result.readdirres_u.reply.entries = current;
+#if 1
+  entry *xx;
+  i = 0;
+  for (xx = bottom; xx != NULL; xx = xx->nextentry)
+  {
+    NSLog(@"  name: %s cookie: %x fileid: %d next: %p", xx->name,
+          *((int *) xx->cookie), xx->fileid, xx->nextentry);
+    i++;
+  }
+  NSLog(@"send reply with %d entries; eof %d", i, result.readdirres_u.reply.eof);
+#endif
+  
+  result.readdirres_u.reply.entries = bottom;
 
   return(&result);
 }

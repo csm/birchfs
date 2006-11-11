@@ -23,13 +23,13 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 @interface BirchQuery : NSObject {
   NSString *name;
   bool isLeaf;
-  NSString *predicate;
+  NSPredicate *predicate;
   NSArray *subordinates;
 }
 
 - (id) initWithName: (NSString *) aName
              isLeaf: (bool) aBool
-          predicate: (NSString *) aPredicate
+          predicate: (NSPredicate *) aPredicate
        subordinates: (NSArray *) subordinates;
 
 + (BirchQuery *) queryWithArray: (NSArray *) anArray;
@@ -39,7 +39,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 
 - (NSString *) name;
 - (bool) isLeaf;
-- (NSString *) predicate;
+- (NSPredicate *) predicate;
 - (NSArray *) subordinates;
 
 @end

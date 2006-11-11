@@ -36,6 +36,7 @@ static NFSServer *gServer = nil;
     state = NFSServerNotStarted;
     serverPool = nil;
     flushCount = 0;
+    cacheFlushCount = 0;
   }
   return self;
 }
@@ -87,6 +88,37 @@ static NFSServer *gServer = nil;
   flushCount = kPoolFlushCount;
 }
 
+- (void) flushCache
+{
+  if (cacheFlushCount > kCacheFlushCount)
+  {
+    NSArray *values = [dentry_cache allValues];
+    NSMutableArray *stale = [NSMutableArray arrayWithCapacity: 10];
+    int i;
+    const int n = [values count];
+    
+    for (i = 0; i < n; i++)
+    {
+      Dentry *d = (Dentry *) [values objectAtIndex: i];
+      
+      // If the dentry is retained by a child dentry, we can't remove it.
+      if ([d retainCount] > 1)
+      {
+        continue;
+      }
+      
+      if ([[d accessedTime] timeIntervalSinceNow] < -kDentryLifetime)
+      {
+        [stale addObject: [d handle]];
+      }
+    }
+    
+    [dentry_cache removeObjectsForKeys: stale];
+
+    cacheFlushCount = 0;
+  }
+}
+
 - (void) mount
 {
   if (mounted > 0)
@@ -126,25 +158,23 @@ static NFSServer *gServer = nil;
 - (void) insert: (Dentry *) aDentry
 {
   FileHandle *handle = [aDentry handle];
-  NSLog(@"mapping %@ -> %@ (%p)", handle, aDentry, dentry_cache);
   [dentry_cache setObject: aDentry forKey: [aDentry handle]];
-  
-  NSLog(@"dentry_cache is %@", dentry_cache);
 }
 
-- (RunningQuery *) runningQuery: (int) cookie
+- (RunningQuery *) runningQueryForHandle: (FileHandle *) aHandle
 {
-  return (RunningQuery *) [queries objectForKey: [NSNumber numberWithInt: cookie]];
+  return (RunningQuery *) [queries objectForKey: aHandle];
 }
 
 - (void) insertRunningQuery: (RunningQuery *) aQuery
+                  forHandle: (FileHandle *) aHandle
 {
-  [queries setObject: aQuery forKey: [NSNumber numberWithInt: [aQuery cookie]]];
+  [queries setObject: aQuery forKey: aHandle];
 }
 
-- (void) removeRunningQuery: (int) cookie
+- (void) removeRunningQueryForHandle: (FileHandle *) aHandle
 {
-  [queries removeObjectForKey: [NSNumber numberWithInt: cookie]];
+  [queries removeObjectForKey: aHandle];
 }
 
 - (BirchQuery *) queryForName: (NSString *) aName
@@ -158,7 +188,10 @@ static NFSServer *gServer = nil;
 	       kWildcard, @"", @"",
 	       [appController queryNames], nil];
     else
+    {
       array = [appController queryForName: aName];
+      [array replaceObjectAtIndex: 5 withObject: [appController queryNames]];
+    }
   }
   
   if (array != nil)
@@ -170,12 +203,43 @@ static NFSServer *gServer = nil;
   return nil;
 }
 
+- (void) addQueryWithName: (NSString *) aName
+                    toDir: (NSString *) aDirname
+{
+  if ([aDirname isEqual: kBirchRoot])
+  {
+    [appController newQueryWithName: aName];
+  }
+  else
+  {
+    NSArray *parent = [appController queryForName: aDirname];
+    if (parent == nil)
+    {
+      return; // Maybe, this should not happen.
+    }
+    NSArray *child = [appController queryForName: aName];
+    if (child == nil)
+    {
+      [appController newQueryWithName: aName];
+    }
+    NSMutableArray *subordinates = [parent objectAtIndex: 5];
+    if (![subordinates containsObject: aName])
+    {
+      [subordinates addObject: aName];
+    }
+  }
+  [appController syncDefaults];
+}
+
 - (void) runServerLoop: (id) anAgrument
 {
   [self flushPool];
   NSLog(@"launching NFS server thread");
   [self setState: NFSServerStarting];
-  int ret = nfs_main (0, NULL);
+  NSLog(@"setting up MOUNT server...");
+  int ret = mount_setup (0, NULL);
+  NSLog(@"mount_setup returns status %d", ret);
+  ret = nfs_main (0, NULL);
   NSLog(@"server thread exited with status %d!", ret);
   [self setState: NFSServerExited];
 }

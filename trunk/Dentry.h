@@ -39,6 +39,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 - (FileHandle *) handle;
 
 - (void) access;
+- (void) modify;
 
 - (NSDate *) accessedTime;
 - (NSDate *) modifiedTime;

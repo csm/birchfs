@@ -26,6 +26,10 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
   int cookie;
   NSMetadataQuery *query;
   int index;
+  bool isDone;
+  NSMutableSet *listed;
+  int lastCount;
+  NSDate *lastDate;
 }
 
 - (id) initWithCookie: (int) aCookie query: (BirchQuery *) aQuery
@@ -38,5 +42,13 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 - (NSMetadataQuery *) query;
 - (int) index;
 - (void) setIndex: (int) anIndex;
+- (bool) isDone;
+- (void) setDone: (bool) aBool;
+
+- (bool) hasListed: (NSString *) name;
+- (void) listed: (NSString *) name;
+
+- (void) loop;
+- (bool) shouldGiveUp;
 
 @end

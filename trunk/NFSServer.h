@@ -24,7 +24,14 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 #import "BirchQuery.h"
 #import "RunningQuery.h"
 
+// The number of NFS event loops to run before autoreleasing objects.
 #define kPoolFlushCount 1
+
+// The number of NFS event loops to run before flushing the dentry cache.
+#define kCacheFlushCount 5
+
+// The dentry lifetime, in seconds.
+#define kDentryLifetime 300
 
 #define kBirchRoot "/Birch"
 
@@ -35,6 +42,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
   NFSServerState state;
   NSAutoreleasePool *serverPool;
   int flushCount;
+  int cacheFlushCount;
   int mounted;
 }
 
@@ -48,6 +56,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 //- (void) serverEnteringLoop;
 
 - (void) flushPool;
+- (void) flushCache;
 
 - (void) mount;
 - (void) unmount;
@@ -56,11 +65,12 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 - (Dentry *) lookup: (FileHandle *) aHandle;
 - (void) insert: (Dentry *) aDentry;
 
-- (RunningQuery *) runningQuery: (int) cookie;
-- (void) insertRunningQuery: (RunningQuery *) aQuery;
-- (void) removeRunningQuery: (int) cookie;
+- (RunningQuery *) runningQueryForHandle: (FileHandle *) aHandle;
+- (void) insertRunningQuery: (RunningQuery *) aQuery forHandle: (FileHandle *) aHandle;
+- (void) removeRunningQueryForHandle: (FileHandle *) aHandle;
 
 - (BirchQuery *) queryForName: (NSString *) aName;
+- (void) addQueryWithName: (NSString *) aName toDir: (NSString *) aDirname;
 
 - (void) runServerLoop: (id) anArgument;
 

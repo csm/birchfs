@@ -1,4 +1,4 @@
-/* DentryFile.m
+/* DentryMetafile.h -- a meta-file.
    Copyright (C) 2006  Casey Marshall <csm@soe.ucsc.edu>
    
 This file is a part of Birch.
@@ -17,44 +17,21 @@ You should have received a copy of the GNU General Public License
 along with Birch; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 
-#import "DentryFile.h"
+#import <Cocoa/Cocoa.h>
+#import "Dentry.h"
 
-
-@implementation DentryFile
-
-- (id) initWithName: (NSString *) aName
-             parent: (Dentry *) aParent
-	           handle: (FileHandle *) aHandle
-	         realpath: (NSString *) aPath
+// This class is meant to support applications like Finder that need
+// to store meta-info in a special file (for example, .DS_Store). Metafiles
+// are pure-memory files only -- that is, the entire contents of the
+// file only exist in virtual memory.
+@interface DentryMetafile : Dentry
 {
-  if ((self = [super initWithName: aName parent: aParent handle: aHandle]) != nil)
-  {
-    realpath = [[NSString alloc] initWithString: aPath];
-  }
-  
-  return self;
+  NSMutableData *contents;
 }
 
-- (void) dealloc
-{
-  [realpath release];
-  [super dealloc];
-}
-
-- (NSString *) realpath
-{
-  return [NSString stringWithString: realpath];
-}
-
-- (bool) isFile
-{
-  return YES;
-}
-
-- (NSString *) description
-{
-  return [NSString stringWithFormat: @"LNK handle:%@ name:%@ realpath:%@",
-          handle, name, realpath];
-}
+- (int) size;
+- (void) truncate: (int) newSize;
+- (void) writeData: (NSData *) data atOffset: (int) offset;
+- (int) readData: (void *) buf atOffset: (int) offset length: (int) len;
 
 @end

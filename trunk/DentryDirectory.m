@@ -29,7 +29,6 @@ extern const char kRootHandle[];
 {
   char zero[32];
   memset (zero, 0, 32);
-  NSLog(@"initialize the root");
   if ((self = [super initWithName: @"/Birch" parent: nil
        handle: [FileHandle handleWithBytes: zero]]) != nil)
   {
@@ -51,7 +50,10 @@ extern const char kRootHandle[];
   {
     isRoot = NO;
     isLeaf = aBool;
-    predicate = [aPredicate copy];
+    if (aPredicate != nil)
+      predicate = [aPredicate copy];
+    else
+      predicate = nil;
   }
   
   return self;
@@ -85,6 +87,12 @@ extern const char kRootHandle[];
 
 - (NSPredicate *) buildPredicate
 {
+  if (parent == nil)
+    return nil;
+  if ([parent isRoot])
+    return [[predicate copy] autorelease];
+  if (predicate == nil)
+    return [((DentryDirectory *) parent) buildPredicate];
   return [NSCompoundPredicate andPredicateWithSubpredicates:
           [NSArray arrayWithObjects: [((DentryDirectory *) parent) buildPredicate],
            predicate, nil]];
@@ -92,8 +100,8 @@ extern const char kRootHandle[];
 
 - (NSString *) description
 {
-  return [NSString stringWithFormat: @"DIR handle:%@ name:%@ predicate:%@",
-    handle, name, predicate];
+  return [NSString stringWithFormat: @"DIR handle:%@ name:%@",
+    handle, name];
 }
 
 - (bool) isDir

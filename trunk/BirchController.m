@@ -19,7 +19,6 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 
 #import "BirchController.h"
 #import "NFSServer.h"
-#import "MountServer.h"
 #import "BirchMetadataKind.h"
 #import "constants.h"
 
@@ -53,93 +52,97 @@ static id mdpair (NSString *str, enum BirchMetadataKind kind)
         kWildcard,
       //mdpair (@"kMDItemAudience",                kBirchMetadataKindArray),
       //@"Audience",
-      mdpair (@"kMDItemAuthors",                 kBirchMetadataKindArray),
+      mdpair ((NSString *) kMDItemAuthors,                 kBirchMetadataKindArray),
       @"Authors",
-      //mdpair (@"kMDItemCity",                    kBirchMetadataKindString),
+      //mdpair (kMDItemCity,                    kBirchMetadataKindString),
       //@"City of origin",
-      mdpair (@"kMDItemComment",                 kBirchMetadataKindString),
+      mdpair ((NSString *) kMDItemComment,                 kBirchMetadataKindString),
         @"Comment",
-      mdpair (@"kMDItemContactKeywords",         kBirchMetadataKindArray),
+      mdpair ((NSString *) kMDItemContactKeywords,         kBirchMetadataKindArray),
         @"Contacts",
-      mdpair (@"kMDItemContentType",             kBirchMetadataKindString),
+      mdpair ((NSString *) kMDItemContentType,             kBirchMetadataKindString),
         @"Content type",
-      //mdpair (@"kMDItemContentTypeTree",         kBirchMetadataKindArray),
+      //mdpair (kMDItemContentTypeTree,         kBirchMetadataKindArray),
       //@"Content type tree",
-      mdpair (@"kMDItemContentCreationDate",     kBirchMetadataKindDate),
+      mdpair ((NSString *) kMDItemContentCreationDate,     kBirchMetadataKindDate),
         @"Creation date",
-      mdpair (@"kMDItemTextContent",             kBirchMetadataKindString),
+      mdpair ((NSString *) kMDItemTextContent,             kBirchMetadataKindString),
         @"Content",
-      mdpair (@"kMDItemContributors",            kBirchMetadataKindArray),
+      mdpair ((NSString *) kMDItemContributors,            kBirchMetadataKindArray),
         @"Contributors",
-      mdpair (@"kMDItemCopyright",               kBirchMetadataKindString),
+      mdpair ((NSString *) kMDItemCopyright,               kBirchMetadataKindString),
         @"Copyright Owner",
-      mdpair (@"kMDItemCountry",                 kBirchMetadataKindString),
+      mdpair ((NSString *) kMDItemCountry,                 kBirchMetadataKindString),
         @"Country",
-      //mdpair (@"kMDItemCoverage",                kBirchMetadataKindString),
+      //mdpair (kMDItemCoverage,                kBirchMetadataKindString),
       //@"Coverage",
-      mdpair (@"kMDItemCreator",                 kBirchMetadataKindString),
+      mdpair ((NSString *) kMDItemCreator,                 kBirchMetadataKindString),
         @"Creator",
-      mdpair (@"kMDItemAttributeChangeDate",     kBirchMetadataKindDate),
+      mdpair ((NSString *) kMDItemAttributeChangeDate,     kBirchMetadataKindDate),
         @"Date of attribute change",
-      mdpair (@"kMDItemDescription",             kBirchMetadataKindString),
+      mdpair ((NSString *) kMDItemDescription,             kBirchMetadataKindString),
         @"Description",
-      mdpair (@"kMDItemDisplayName",             kBirchMetadataKindString),
+      mdpair ((NSString *) kMDItemDisplayName,             kBirchMetadataKindString),
         @"Display name",
-      mdpair (@"kMDItemDueDate",                 kBirchMetadataKindDate),
+      mdpair ((NSString *) kMDItemDueDate,                 kBirchMetadataKindDate),
         @"Due date",
-      mdpair (@"kMDItemDurationSeconds",         kBirchMetadataKindNumber),
+      mdpair ((NSString *) kMDItemDurationSeconds,         kBirchMetadataKindNumber),
         @"Duration in seconds",
-      mdpair (@"kMDItemEmailAddresses",          kBirchMetadataKindArray),
+      mdpair ((NSString *) kMDItemEmailAddresses,          kBirchMetadataKindArray),
         @"Email addresses",
-      mdpair (@"kMDItemEncodingApplications",    kBirchMetadataKindArray),
+      mdpair ((NSString *) kMDItemEncodingApplications,    kBirchMetadataKindArray),
         @"Encoding applications",
-      mdpair (@"kMDItemFinderComment",           kBirchMetadataKindString),
+      mdpair ((NSString *) kMDItemFinderComment,           kBirchMetadataKindString),
         @"Finder comment",
-      //mdpair (@"kMDItemFonts",                   kBirchMetadataKindArray),
+      //mdpair (kMDItemFonts,                   kBirchMetadataKindArray),
         //@"Fonts",
-      mdpair (@"kMDItemHeadline",                kBirchMetadataKindString),
+      mdpair ((NSString *) kMDItemHeadline,                kBirchMetadataKindString),
         @"Headline",
-      mdpair (@"kMDItemIdentifier",              kBirchMetadataKindString),
+      mdpair ((NSString *) kMDItemIdentifier,              kBirchMetadataKindString),
         @"Identifer",
-      //mdpair (@"kMDItemInstantMessageAddress",   kBirchMetadataKindArray),
+      //mdpair (kMDItemInstantMessageAddress,   kBirchMetadataKindArray),
         //@"Instant message address",
-      //mdpair (@"kMDItemInstructions",            kBirchMetadataKindString),
+      //mdpair (kMDItemInstructions,            kBirchMetadataKindString),
         //@"Instructions",
-      mdpair (@"kMDItemKeywords",                kBirchMetadataKindArray),
+      mdpair ((NSString *) kMDItemKeywords,                kBirchMetadataKindArray),
         @"Keywords",
-      mdpair (@"kMDItemKind",                    kBirchMetadataKindString),
+      mdpair ((NSString *) kMDItemKind,                    kBirchMetadataKindString),
         @"Kind",
-      mdpair (@"kMDItemLanguages",               kBirchMetadataKindArray),
+      mdpair ((NSString *) kMDItemLanguages,               kBirchMetadataKindArray),
         @"Languages",
-      mdpair (@"kMDItemContentModificationDate", kBirchMetadataKindDate),
+      mdpair ((NSString *) kMDItemContentModificationDate, kBirchMetadataKindDate),
         @"Last modified date",
-      mdpair (@"kMDItemLastUsedDate",            kBirchMetadataKindDate),
+      mdpair ((NSString *) kMDItemLastUsedDate,            kBirchMetadataKindDate),
         @"Last used date",
-      mdpair (@"kMDItemNumberOfPages",           kBirchMetadataKindNumber),
+      mdpair ((NSString *) kMDItemNumberOfPages,           kBirchMetadataKindNumber),
         @"Number of pages",
-      //mdpair (@"kMDItemOrganizations",           kBirchMetadataKindArray),
+      //mdpair (kMDItemOrganizations,           kBirchMetadataKindArray),
         //@"Organizations",
       // kMDItemPageHeight
       // kMDItemPageWidth
       // kMDItemPhoneNumbers
-      mdpair (@"kMDItemProjects",                kBirchMetadataKindArray),
+      mdpair ((NSString *) kMDItemProjects,                kBirchMetadataKindArray),
         @"Projects",
-      mdpair (@"kMDItemPublishers",              kBirchMetadataKindArray),
+      mdpair ((NSString *) kMDItemPublishers,              kBirchMetadataKindArray),
         @"Publishers",
       // kMDItemRecipients
       // kMDItemRights
       // kMDItemSecurityMethod
-      mdpair (@"kMDItemStarRating",              kBirchMetadataKindNumber),
+      mdpair ((NSString *) kMDItemStarRating,              kBirchMetadataKindNumber),
         @"Star rating",
       // kMDItemStateOrProvince
-      mdpair (@"kMDItemTitle",                   kBirchMetadataKindString),
+      mdpair ((NSString *) kMDItemTitle,                   kBirchMetadataKindString),
         @"Title",
-      mdpair (@"kMDItemVersion",                 kBirchMetadataKindString),
+      mdpair ((NSString *) kMDItemVersion,                 kBirchMetadataKindString),
         @"Version",
-      mdpair (@"kMDItemWhereFroms",              kBirchMetadataKindArray),
+      mdpair ((NSString *) kMDItemWhereFroms,              kBirchMetadataKindArray),
         @"Where from",
-      mdpair (@"kMDItemFSName",                  kBirchMetadataKindString),
+      mdpair ((NSString *) kMDItemFSName,                  kBirchMetadataKindString),
         @"Name",
+      mdpair ((NSString *) kMDItemAlbum,      kBirchMetadataKindString),
+        @"Album",
+      mdpair ((NSString *) kMDItemFSSize,     kBirchMetadataKindNumber),
+        @"Size",
       nil ] retain];
     gMdKeys = mdKeys;
     mdKeyNames = [[[mdKeys allKeys]
@@ -169,6 +172,7 @@ static id mdpair (NSString *str, enum BirchMetadataKind kind)
      [NSMutableArray arrayWithCapacity: 10], kBirchQueriesDefault,
      nil]];
     selectedQuery = -1;
+    queriesLock = [[NSLock alloc] init];
   }
   
   NSLog(@"init out");
@@ -201,8 +205,12 @@ static id mdpair (NSString *str, enum BirchMetadataKind kind)
   for (i = 0; i < n; i++)
   {
     NSArray *a = [arr objectAtIndex: i];
+    NSArray *sub = [a objectAtIndex: 5];
     NSMutableArray *b = [NSMutableArray arrayWithCapacity: [a count]];
     [b addObjectsFromArray: a];
+    NSMutableArray *msub = [NSMutableArray arrayWithCapacity: [sub count]];
+    [msub addObjectsFromArray: sub];
+    [b replaceObjectAtIndex: 5 withObject: msub];
     [queries addObject: b];
   }
   
@@ -210,13 +218,15 @@ static id mdpair (NSString *str, enum BirchMetadataKind kind)
   [nc addObserver: self selector:@selector(mainTableNotify:)
    name: NSTableViewSelectionDidChangeNotification object: mainTable];
    
-  MountServer *mountd = [MountServer server];
-  [NSThread detachNewThreadSelector: @selector(runServerLoop:)
-   toTarget: mountd withObject: nil];
+  //MountServer *mountd = [MountServer server];
+  //[NSThread detachNewThreadSelector: @selector(runServerLoop:)
+  // toTarget: mountd withObject: nil];
    
   NFSServer *server = [NFSServer serverWithController: self];
   [NSThread detachNewThreadSelector: @selector(runServerLoop:)
    toTarget: server withObject: nil];
+   
+  [mainTable reloadData];
   NSLog(@"awoken!");
 }
 
@@ -344,7 +354,8 @@ nameTaken (NSString *name, NSArray *queries)
 }
 
 // Valid query names must be valid path names, and thus may not be of
-// zero length, and may not contain the character '/'.
+// zero length, may not contain the character '/', and may not equal "."
+// or ".."
 static BOOL
 isValidPathname (NSString *name)
 {
@@ -353,11 +364,17 @@ isValidPathname (NSString *name)
   NSRange r = [name rangeOfString: @"/"];
   if (r.location != NSNotFound)
     return NO;
+  if ([name isEqual: @"."])
+    return NO;
+  if ([name isEqual: @".."])
+    return NO;
   return YES;
 }
 
 - (IBAction) addQueryClicked: (id) sender
 {
+  NSLog(@"LOCK %@", queriesLock);
+  [queriesLock lock];
   NSMutableArray *newQuery = [NSMutableArray arrayWithCapacity: 6];
   NSString *name = @"New Query";
   int i = 1;
@@ -368,7 +385,7 @@ isValidPathname (NSString *name)
   [newQuery addObject: kWildcard];
   [newQuery addObject: @""];
   [newQuery addObject: @""];
-  [newQuery addObject: [NSArray array]];
+  [newQuery addObject: [NSMutableArray arrayWithCapacity: 10]];
 
   [queries addObject: newQuery];
   [mainTable reloadData];
@@ -378,20 +395,46 @@ isValidPathname (NSString *name)
   selectedQuery = [queries count] - 1;
   [mainTable selectRow: selectedQuery byExtendingSelection: NO];
   [self updatePanelForSelection];
+  NSLog(@"UNLOCK %@", queriesLock);
+  [queriesLock unlock];
 }
 
 - (IBAction) delQueryClicked: (id) sender
 {
   if (selectedQuery != -1)
   {
+    if (selectedQuery < 0 || selectedQuery >= [queries count])
+    {
+      NSLog(@"invalid query index %d", selectedQuery);
+      return;
+    }
+    NSLog(@"LOCK %@", queriesLock);
+    [queriesLock lock];
+    NSArray *removed = [queries objectAtIndex: selectedQuery];
+    NSString *oldname = [removed objectAtIndex: 0];
     [queries removeObjectAtIndex: selectedQuery];
     [mainTable reloadData];
     [defaults setObject: queries forKey: kBirchQueriesDefault];
     [defaults synchronize];
     
+    // FIXME! Dentry cache consistency!!
+    int i;
+    const int n = [queries count];
+    for (i = 0; i < n; i++)
+    {
+      NSArray *q = [queries objectAtIndex: i];
+      NSMutableArray *sub = [q objectAtIndex: 5];
+      if ([sub containsObject: oldname])
+      {
+        [sub removeObject: oldname];
+      }
+    }
+    
     // removal changes selection.
     selectedQuery = [mainTable selectedRow];
     [self updatePanelForSelection];
+    NSLog(@"UNLOCK %@", queriesLock);
+    [queriesLock unlock];
   }
 }
 
@@ -399,23 +442,47 @@ isValidPathname (NSString *name)
 {
   if (selectedQuery == -1)
     return;
+  NSLog(@"LOCK %@", queriesLock);
+  [queriesLock lock];
   NSString *name = [nameField stringValue];
   NSMutableArray *query = [queries objectAtIndex: selectedQuery];
+  NSString *oldname = [query objectAtIndex: 0];
 
-  if ([name isEqualToString: [query objectAtIndex: 0]])
+  if ([name isEqualToString: oldname])
   {
+    NSLog(@"UNLOCK %@", queriesLock);
+    [queriesLock unlock];
     return; // didn't change
   }
   if (nameTaken (name, queries) || !isValidPathname(name))
   {
     NSBeep();
+    NSLog(@"UNLOCK %@", queriesLock);
+    [queriesLock unlock];
     return;
   }
-    
+  
   [query replaceObjectAtIndex: 0 withObject: name];
+
+  // FIXME! this will wreak havoc on cached dentries!!
+  int i;
+  const int n = [queries count];
+  for (i = 0; i < n; i++)
+  {
+    NSArray *q = [queries objectAtIndex: i];
+    NSMutableArray *sub = [q objectAtIndex: 5];
+    if ([sub containsObject: oldname])
+    {
+      [sub removeObject: oldname];
+      [sub addObject: name];
+    }
+  }
+  
   [mainTable reloadData];
   [defaults setObject: queries forKey: kBirchQueriesDefault];
   [defaults synchronize];
+  NSLog(@"UNLOCK %@", queriesLock);
+  [queriesLock unlock];
 }
 
 - (IBAction) selectedMetadataKey: (id) sender
@@ -442,23 +509,23 @@ isValidPathname (NSString *name)
     switch (_d([pair objectAtIndex: 1]))
     {
       case kBirchMetadataKindWildcard:
-	break;
+        break;
 
       case kBirchMetadataKindArray:
-	[query replaceObjectAtIndex: 3 withObject: kMDComparisonArrayContains];
-	break;
+        [query replaceObjectAtIndex: 3 withObject: kMDComparisonArrayContains];
+        break;
 
       case kBirchMetadataKindDate:
-	[query replaceObjectAtIndex: 3 withObject: kMDComparisonDateEqual];
-	break;
+        [query replaceObjectAtIndex: 3 withObject: kMDComparisonDateEqual];
+        break;
 
       case kBirchMetadataKindString:
-	[query replaceObjectAtIndex: 3 withObject: kMDComparisonStringEqual];
-	break;
+        [query replaceObjectAtIndex: 3 withObject: kMDComparisonStringEqual];
+        break;
 
       case kBirchMetadataKindNumber:
-	[query replaceObjectAtIndex: 3 withObject: kMDComparisonNumberEqual];
-	break;
+        [query replaceObjectAtIndex: 3 withObject: kMDComparisonNumberEqual];
+        break;
     }
     [queryType setEnabled: YES];
     [queryValue setEnabled: YES];  
@@ -506,7 +573,7 @@ isValidPathname (NSString *name)
 {
   if (selectedQuery == -1)
     return;
-  NSArray *query = [queries objectAtIndex: selectedQuery];
+  NSMutableArray *query = [queries objectAtIndex: selectedQuery];
   [query replaceObjectAtIndex: 4 withObject: [queryValue stringValue]];
   [defaults setObject: queries forKey: kBirchQueriesDefault];
   [defaults synchronize];
@@ -583,16 +650,56 @@ isValidPathname (NSString *name)
 
 - (NSArray *) queryNames
 {
+  NSLog(@"LOCK %@", queriesLock);
+  [queriesLock lock];
   int i;
-  NSMutableArray *list = [NSMutableArray arrayWithCapacity: [queries count]];
+  const int n = [queries count];
+  NSMutableArray *list = [NSMutableArray arrayWithCapacity: n];
 
-  for (i = 0; i < [queries count]; i++)
+  for (i = 0; i < n; i++)
   {
     NSArray *a = (NSArray *) [queries objectAtIndex: i];
     [list addObject: [a objectAtIndex: 0]];
   }
   
+  NSLog(@"UNLOCK %@", queriesLock);
+  [queriesLock unlock];
   return list;
+}
+
+- (void) newQueryWithName: (NSString *) aName
+{
+  NSLog(@"LOCK %@", queriesLock);
+  [queriesLock lock];
+  int i;
+  const int n = [queries count];
+  
+  for (i = 0; i < n; i++)
+  {
+    NSArray *a = [queries objectAtIndex: i];
+    if ([[a objectAtIndex: 0] isEqual: aName])
+    {
+      [queriesLock unlock];
+      return;
+    }
+  }
+  
+  NSMutableArray *newQuery = [NSMutableArray arrayWithCapacity: 6];
+  [newQuery addObject: aName];
+  [newQuery addObject: [NSNumber numberWithBool: NO]];
+  [newQuery addObject: kWildcard];
+  [newQuery addObject: @""];
+  [newQuery addObject: @""];
+  [newQuery addObject: [NSMutableArray arrayWithCapacity: 10]];
+  [queries addObject: newQuery];
+  
+  NSLog(@"UNLOCK %@", queriesLock);
+  [queriesLock unlock];
+}
+
+- (void) syncDefaults
+{
+  [defaults synchronize];
 }
 
 - (int) numberOfItemsInComboBox: (NSComboBox *) aComboBox
