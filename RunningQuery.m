@@ -35,23 +35,27 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
     listing_dirs = YES;
     cookie = aCookie;
     theQuery = aQuery;
+    [theQuery retain];
     if (aPredicate != nil)
     {
       query = [[NSMetadataQuery alloc] init];
       [query setPredicate: aPredicate];
-      [query start];
+      [query startQuery];
     }
     else
     {
       query = nil;
     }
     index = 0;
+    isDone = NO;
+    listed = [[NSMutableSet alloc] initWithCapacity: 10];
+    lastCount = -1;
   }
   
   return self;
 }
 
-- (BirchQuery *) queryInfo
+- (id) queryInfo
 {
   return theQuery;
 }
@@ -86,13 +90,58 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
   index = anIndex;
 }
 
+- (bool) isDone
+{
+  return isDone;
+}
+
+- (void) setDone: (bool) aBool
+{
+  isDone = aBool;
+}
+
 - (void) dealloc
 {
+  [theQuery release];
   if (query != nil)
   {
     [query release];
   }
+  [listed release];
   [super dealloc];
+}
+
+- (bool) hasListed: (NSString *) name
+{
+  return [listed containsObject: name];
+}
+
+- (void) listed: (NSString *) name
+{
+  [listed addObject: name];
+}
+
+- (void) loop
+{
+  if (query != nil)
+  {
+    int n = [query resultCount];
+    if (n != lastCount)
+    {
+      if (lastDate != nil)
+        [lastDate release];
+      lastDate = [[NSDate alloc] init];
+      lastCount = n;
+    }
+  }
+}
+
+// Give up if nothing new has happened in 30 seconds.
+- (bool) shouldGiveUp
+{
+  if (lastDate == nil)
+    return NO;
+  return [lastDate timeIntervalSince1970] > 30;
 }
 
 @end

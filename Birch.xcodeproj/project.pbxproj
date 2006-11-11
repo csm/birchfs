@@ -7,13 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7004C49F0B0506A90065EBFD /* DentryMetafile.m in Sources */ = {isa = PBXBuildFile; fileRef = 7004C49E0B0506A90065EBFD /* DentryMetafile.m */; };
 		7016CA9C0ADF198100F185D2 /* BirchController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7016CA9B0ADF198100F185D2 /* BirchController.m */; };
 		7016CD1B0AE7358600F185D2 /* Birch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7016CD1A0AE7358400F185D2 /* Birch.icns */; };
 		7016CDC80AE982E000F185D2 /* NFSServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 7016CDC70AE982E000F185D2 /* NFSServer.m */; };
+		7018A3980B00243E007911F2 /* DentryEmptyfile.m in Sources */ = {isa = PBXBuildFile; fileRef = 7018A3970B00243E007911F2 /* DentryEmptyfile.m */; };
 		708AAE090AF00FB7007144B0 /* mount_server.m in Sources */ = {isa = PBXBuildFile; fileRef = 708AAE050AF00FB7007144B0 /* mount_server.m */; };
 		708AAE0A0AF00FB8007144B0 /* mount_svc.m in Sources */ = {isa = PBXBuildFile; fileRef = 708AAE060AF00FB7007144B0 /* mount_svc.m */; };
 		708AAE0B0AF00FB8007144B0 /* mount_xdr.m in Sources */ = {isa = PBXBuildFile; fileRef = 708AAE070AF00FB7007144B0 /* mount_xdr.m */; };
-		708AAE490AF0146F007144B0 /* MountServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 708AAE480AF0146F007144B0 /* MountServer.m */; };
 		70BA748E0AF1795800E2CB16 /* FileHandle.m in Sources */ = {isa = PBXBuildFile; fileRef = 70BA748D0AF1795800E2CB16 /* FileHandle.m */; };
 		70BA74990AF192F600E2CB16 /* Dentry.m in Sources */ = {isa = PBXBuildFile; fileRef = 70BA74980AF192F600E2CB16 /* Dentry.m */; };
 		70BA74A50AF2A2D000E2CB16 /* DentryDirectory.m in Sources */ = {isa = PBXBuildFile; fileRef = 70BA74A40AF2A2D000E2CB16 /* DentryDirectory.m */; };
@@ -39,19 +40,21 @@
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		32CA4F630368D1EE00C91783 /* Birch_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Birch_Prefix.pch; sourceTree = "<group>"; };
+		7004C49D0B0506A90065EBFD /* DentryMetafile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DentryMetafile.h; sourceTree = "<group>"; };
+		7004C49E0B0506A90065EBFD /* DentryMetafile.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DentryMetafile.m; sourceTree = "<group>"; };
 		7016CA9A0ADF198100F185D2 /* BirchController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BirchController.h; sourceTree = "<group>"; };
 		7016CA9B0ADF198100F185D2 /* BirchController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = BirchController.m; sourceTree = "<group>"; };
 		7016CD1A0AE7358400F185D2 /* Birch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = Birch.icns; sourceTree = "<group>"; };
 		7016CDC60AE982E000F185D2 /* NFSServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NFSServer.h; sourceTree = "<group>"; };
 		7016CDC70AE982E000F185D2 /* NFSServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NFSServer.m; sourceTree = "<group>"; };
 		7016CE990AED821100F185D2 /* NFSServerState.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NFSServerState.h; sourceTree = "<group>"; };
+		7018A3960B00243E007911F2 /* DentryEmptyfile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DentryEmptyfile.h; sourceTree = "<group>"; };
+		7018A3970B00243E007911F2 /* DentryEmptyfile.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DentryEmptyfile.m; sourceTree = "<group>"; };
 		708AAE050AF00FB7007144B0 /* mount_server.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = mount_server.m; sourceTree = "<group>"; };
 		708AAE060AF00FB7007144B0 /* mount_svc.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = mount_svc.m; sourceTree = "<group>"; };
 		708AAE070AF00FB7007144B0 /* mount_xdr.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = mount_xdr.m; sourceTree = "<group>"; };
 		708AAE080AF00FB7007144B0 /* mount.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = mount.h; sourceTree = "<group>"; };
 		708AAE0C0AF00FD9007144B0 /* mount.x */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = mount.x; sourceTree = "<group>"; };
-		708AAE470AF0146F007144B0 /* MountServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MountServer.h; sourceTree = "<group>"; };
-		708AAE480AF0146F007144B0 /* MountServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MountServer.m; sourceTree = "<group>"; };
 		70BA748C0AF1795800E2CB16 /* FileHandle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileHandle.h; sourceTree = "<group>"; };
 		70BA748D0AF1795800E2CB16 /* FileHandle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FileHandle.m; sourceTree = "<group>"; };
 		70BA74970AF192F600E2CB16 /* Dentry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Dentry.h; sourceTree = "<group>"; };
@@ -94,24 +97,26 @@
 			children = (
 				7016CA9A0ADF198100F185D2 /* BirchController.h */,
 				7016CA9B0ADF198100F185D2 /* BirchController.m */,
-				7016CDC60AE982E000F185D2 /* NFSServer.h */,
-				7016CDC70AE982E000F185D2 /* NFSServer.m */,
-				7016CE990AED821100F185D2 /* NFSServerState.h */,
-				708AAE470AF0146F007144B0 /* MountServer.h */,
-				708AAE480AF0146F007144B0 /* MountServer.m */,
-				70BA748C0AF1795800E2CB16 /* FileHandle.h */,
-				70BA748D0AF1795800E2CB16 /* FileHandle.m */,
+				70BA75FA0AF96E8400E2CB16 /* BirchMetadataKind.h */,
+				70BA74FC0AF92DAC00E2CB16 /* BirchQuery.h */,
+				70BA74FD0AF92DAC00E2CB16 /* BirchQuery.m */,
 				70BA74970AF192F600E2CB16 /* Dentry.h */,
 				70BA74980AF192F600E2CB16 /* Dentry.m */,
 				70BA74A30AF2A2D000E2CB16 /* DentryDirectory.h */,
 				70BA74A40AF2A2D000E2CB16 /* DentryDirectory.m */,
+				7018A3960B00243E007911F2 /* DentryEmptyfile.h */,
+				7018A3970B00243E007911F2 /* DentryEmptyfile.m */,
 				70BA74AA0AF2A33200E2CB16 /* DentryFile.h */,
 				70BA74AB0AF2A33200E2CB16 /* DentryFile.m */,
-				70BA74FC0AF92DAC00E2CB16 /* BirchQuery.h */,
-				70BA74FD0AF92DAC00E2CB16 /* BirchQuery.m */,
-				70BA75FA0AF96E8400E2CB16 /* BirchMetadataKind.h */,
+				7004C49D0B0506A90065EBFD /* DentryMetafile.h */,
+				7004C49E0B0506A90065EBFD /* DentryMetafile.m */,
+				70BA748C0AF1795800E2CB16 /* FileHandle.h */,
+				70BA748D0AF1795800E2CB16 /* FileHandle.m */,
 				70BA76A10AFBC72D00E2CB16 /* HeapBuffer.h */,
 				70BA76A20AFBC72D00E2CB16 /* HeapBuffer.m */,
+				7016CDC60AE982E000F185D2 /* NFSServer.h */,
+				7016CDC70AE982E000F185D2 /* NFSServer.m */,
+				7016CE990AED821100F185D2 /* NFSServerState.h */,
 				70BA77370AFBD59D00E2CB16 /* RunningQuery.h */,
 				70BA77380AFBD59D00E2CB16 /* RunningQuery.m */,
 				70C29BCC0AFE8EAD006C581C /* constants.h */,
@@ -267,7 +272,6 @@
 				708AAE090AF00FB7007144B0 /* mount_server.m in Sources */,
 				708AAE0A0AF00FB8007144B0 /* mount_svc.m in Sources */,
 				708AAE0B0AF00FB8007144B0 /* mount_xdr.m in Sources */,
-				708AAE490AF0146F007144B0 /* MountServer.m in Sources */,
 				70BA748E0AF1795800E2CB16 /* FileHandle.m in Sources */,
 				70BA74990AF192F600E2CB16 /* Dentry.m in Sources */,
 				70BA74A50AF2A2D000E2CB16 /* DentryDirectory.m in Sources */,
@@ -275,6 +279,8 @@
 				70BA74FE0AF92DAC00E2CB16 /* BirchQuery.m in Sources */,
 				70BA76A30AFBC72D00E2CB16 /* HeapBuffer.m in Sources */,
 				70BA77390AFBD59D00E2CB16 /* RunningQuery.m in Sources */,
+				7018A3980B00243E007911F2 /* DentryEmptyfile.m in Sources */,
+				7004C49F0B0506A90065EBFD /* DentryMetafile.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

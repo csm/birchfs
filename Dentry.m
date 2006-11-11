@@ -26,24 +26,26 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 	     parent: (Dentry *) aParent
 	     handle: (FileHandle *) aHandle
 {
-  NSLog(@"Dentry initWithName:parent:handle");
   if ((self = [super init]) != nil)
   {
     name = [[NSString alloc] initWithString: aName];
+    
+    // Retain the parent, so we know when it is safe to release the parent
+    // -- when it has no children that are not stale.
     parent = aParent;
+    [parent retain];
     handle = [[FileHandle alloc] initWithBytes: [aHandle handle]];
     modified = [[NSDate alloc] init];
     created = [[NSDate alloc] init];
     accessed = [[NSDate alloc] init];
   }
   
-  NSLog(@"Dentry init ok");
-  
   return self;
 }
 
 - (void) dealloc
 {
+  [parent release];
   [name release];
   [handle release];
   [accessed release];
@@ -72,6 +74,14 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
   NSDate *now = [[NSDate alloc] init];
   NSDate *then = accessed;
   accessed = now;
+  [then release];
+}
+
+- (void) modify
+{
+  NSDate *now = [[NSDate alloc] init];
+  NSDate *then = modified;
+  modified = now;
   [then release];
 }
 

@@ -56,7 +56,9 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 {
   char *h = malloc (32);
   memcpy (h, handle, 32);
-  [HeapBuffer bufferWithPointer: h];
+  [NSData dataWithBytesNoCopy: h
+   length: 32
+   freeWhenDone: YES];
   return h;
 }
 

@@ -35,7 +35,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 #include <ifaddrs.h>
 
 #import <Foundation/Foundation.h>
-#import "MountServer.h"
+#import "NFSServer.h"
 
 #ifdef __STDC__
 #define SIG_PF void(*)(int)
@@ -186,7 +186,7 @@ mountprog_1(rqstp, transp)
 	if (!svc_getargs(transp, xdr_argument, (caddr_t) &argument)) {
 		svcerr_decode(transp);
 		_rpcsvcdirty = 0;
-		[[MountServer server] flushPool];
+		[[NFSServer server] flushPool];
 		return;
 	}
 	result = (*local)(&argument, rqstp);
@@ -195,10 +195,10 @@ mountprog_1(rqstp, transp)
 	}
 	if (!svc_freeargs(transp, xdr_argument, (caddr_t) &argument)) {
 		_msgout("unable to free arguments");
-	        [[MountServer server] flushPool];
+    [[NFSServer server] flushPool];
 		return;
 	}
-	[[MountServer server] flushPool];
+	[[NFSServer server] flushPool];
 	_rpcsvcdirty = 0;
 	return;
 }
@@ -272,14 +272,14 @@ mountprog_2(rqstp, transp)
 	default:
 		svcerr_noproc(transp);
 		_rpcsvcdirty = 0;
-		[[MountServer server] flushPool];
+		[[NFSServer server] flushPool];
 		return;
 	}
 	(void) memset((char *)&argument, 0, sizeof (argument));
 	if (!svc_getargs(transp, xdr_argument, (caddr_t) &argument)) {
 		svcerr_decode(transp);
 		_rpcsvcdirty = 0;
-		[[MountServer server] flushPool];
+		[[NFSServer server] flushPool];
 		return;
 	}
 	result = (*local)(&argument, rqstp);
@@ -288,18 +288,18 @@ mountprog_2(rqstp, transp)
 	}
 	if (!svc_freeargs(transp, xdr_argument, (caddr_t) &argument)) {
 		_msgout("unable to free arguments");
-		[[MountServer server] flushPool];
+		[[NFSServer server] flushPool];
 		return;
 	}
 	_rpcsvcdirty = 0;
-	[[MountServer server] flushPool];
+	[[NFSServer server] flushPool];
 	return;
 }
 
 
 
 int
-mount_main(argc, argv)
+mount_setup(argc, argv)
 int argc;
 char *argv[];
 {
@@ -392,8 +392,8 @@ char *argv[];
     return -6;
   }
 
-  _msgout("beginning svc_run...");
-  svc_run();
-  _msgout("svc_run returned");
-  return -7;
+  //_msgout("beginning svc_run...");
+  //svc_run();
+  //_msgout("svc_run returned");
+  return 0;
 }

@@ -263,6 +263,7 @@ nfs_program_2(rqstp, transp)
 		svcerr_noproc(transp);
 		_rpcsvcdirty = 0;
 		[[NFSServer server] flushPool];
+    [[NFSServer server] flushCache];
 		return;
 	}
 	(void) memset((char *)&argument, 0, sizeof (argument));
@@ -270,6 +271,7 @@ nfs_program_2(rqstp, transp)
 		svcerr_decode(transp);
 		_rpcsvcdirty = 0;
 		[[NFSServer server] flushPool];
+    [[NFSServer server] flushCache];
 		return;
 	}
 	result = (*local)(&argument, rqstp);
@@ -283,6 +285,7 @@ nfs_program_2(rqstp, transp)
 	_rpcsvcdirty = 0;
 	
 	[[NFSServer server] flushPool];
+  [[NFSServer server] flushCache];
 	return;
 }
 

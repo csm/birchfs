@@ -31,6 +31,7 @@
   int selectedQuery;
   BOOL doMountOnLaunch;
   NSUserDefaults *defaults;
+  NSLock *queriesLock;
 }
 
 - (void) mainTableNotify: (NSNotification *) n;
@@ -50,6 +51,9 @@
 - (void) nfsServerStatusChanged: (id) aServer;
 - (NSArray *) queryForName: (NSString *) aName;
 - (NSArray *) queryNames;
+- (void) newQueryWithName: (NSString *) aName;
+
+- (void) syncDefaults;
 
 // Combo Box methods. These handle both combo boxes in the window.
 - (int) numberOfItemsInComboBox: (NSComboBox *) aComboBox;
