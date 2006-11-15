@@ -325,11 +325,10 @@ file path concatenated with the file name. Thus, the NFSv2
 given its parent directory's file handle, using only two hashtable
 lookups, one string concatenation, and one MD5 computation.
 
-Our prototype does no flushing of the dentry cache, for the sake of
-simplicity, so whenever a file is looked up it remains in memory
-forever. This is merely a concession for the short development time
---- implementing flushing of the cache should be relatively simple to
-implement.
+In order to support certain core OS X applications like the Finder
+better, Birch does support memory-only read/write files, for things
+such as the \texttt{.DS\_Store} file (which Finder uses to store
+window state information).
 
 \section{Limitations}
 
