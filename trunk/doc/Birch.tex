@@ -49,9 +49,16 @@ model --- directories are queries, files are matches to queries, and a
 path of directories forms a conjunction --- to push an alternative
 data organization into the file system.
 
-Birch is named after the trees outside the author's window, and is
-ironic, since it names something that tries to do away with trees
-after a kind of tree.
+We don't consider Birch a success; a combination of the quality of
+searches possible, and the difficulties in making a highly dynamic
+system operate when serving highly synchronous I/O primitives make it
+a far cry from usable. Some of these issues are undoubtedly due to our
+simple definitions of directories and files, and some are because of
+the short development time --- about two months, part time.
+
+%Birch is named after the trees outside the author's window, and is
+%ironic, since it names something that tries to do away with trees
+%after a kind of tree.
 
 \section{Related Work}
 
@@ -330,7 +337,7 @@ better, Birch does support memory-only read/write files, for things
 such as the \texttt{.DS\_Store} file (which Finder uses to store
 window state information).
 
-\section{Limitations}
+\section{Interpretations and Limitations}
 
 \subsection{Metadata Quality and Availability}
 
@@ -389,6 +396,46 @@ on making the file system have POSIX semantics: without that
 requirement, and the tree structure it implies, a new interface may,
 in fact, be better. Using POSIX semantics is valuable when working
 with existing programs, but may pose barriers to usability.
+
+\subsection{Getting Lost}
+
+Because directory names are global, it is easy to get ``lost'' while
+browsing the file system: the person browsing has no indication that
+the directory he is in is part of a more complicated query or
+not. That is, it is very hard to tell if a query has a parent query
+(which, if it does, will produce a conjunction) and thus opening a
+particular directory may give unexpected results.
+
+\subsection{Synchrony}
+
+A significant problem with Birch is how it interacts with synchronous
+I/O operations --- in some early versions of the program, metadata
+queries took so long to produce any results, even if those results
+returned a nil result set, that the NFS client timed out. Applications
+like Finder are completely unresponsive while some I/O operations,
+like \texttt{readdir}, are taking place. A complicated query with few
+results can render some applications unusable for minutes at a time.
+
+We have taken some measures to improve this, such as adding an
+internal timeout for metadata queries, such that if the query produces
+no more results within 30 seconds, we end the query with the partial
+results. This is of only moderate help, of course, because the
+application will remain unresponsive for up to 30 seconds.
+
+Another issue is with queries that match many, many files. These can
+produce directories that contain hundreds of thousands of files, and
+again, some applications are unresponsive until \emph{all} files have
+been read out of a directory. A simple workaround that we use here is
+a hard cap of 10,000 files per directory. This is not a robust
+solution, but we see no other way of forcing large queries to finish
+in a reasonable amount of time.
+
+We are unsure if this limitation is inherent in the POSIX API and ---
+more importantly --- applications that use that API, or a limitation
+in NFS version 2 and the client-side support built into OS X. We don't
+see any way to force applications to update with partial results,
+while still polling the directory --- many applications simply insist
+on reading an entire directory before returning any results.
 
 \bibliography{Sources}
 
