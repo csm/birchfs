@@ -32,6 +32,7 @@
   BOOL doMountOnLaunch;
   NSUserDefaults *defaults;
   NSLock *queriesLock;
+  BOOL isMounting;
 }
 
 - (void) mainTableNotify: (NSNotification *) n;

@@ -22,6 +22,9 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 #import "BirchMetadataKind.h"
 #import "constants.h"
 
+#import <sys/types.h>
+#import <sys/stat.h>
+
 @implementation BirchController
 
 NSDictionary *gMdKeys = nil;
@@ -599,17 +602,48 @@ isValidPathname (NSString *name)
 
 - (void) mountIt
 {
+  if (isMounting)
+    return;
+  isMounting = YES;
   [mountProgress setUsesThreadedAnimation: YES];
-  [mountProgress startAnimation];
+  [mountProgress startAnimation: self];
+  struct stat st;
+  if (stat ("/tmp/BirchMount", &st) == 0)
+  {
+    if ((st.st_mode & S_IFMT) != S_IFDIR)
+    {
+      NSLog(@"ERROR! /tmp/BirchMount not a directory!");
+      [mountProgress stopAnimation];
+      isMounting = NO;
+      return;
+    }
+  }
+  else
+  {
+    mkdir ("/tmp/BirchMount", 0755);
+  }
+  NSTask *task = [NSTask launchedTaskWithLaunchPath: @"/sbin/mount_nfs"
+    arguments: [NSArray arrayWithObjects: @"-2", @"localhost:/Birch",
+      @"/tmp/BirchMount", nil ]];
+  [task waitUntilExit];
+  int ret = [task teminationStatus];
+  if (ret != 0)
+  {
+    NSLog(@"mount_nfs returned with status %d", ret);
+    isMounting = NO;
+    return;
+  }
   
-  mount ("nfs", "", MNT_NODEV, "localhost:/Birch");
-  [mountProgress stopAnimation];
+  task = [NSTask launchedTaskWithLaunchPath: @"/usr/bin/open"
+    arguments: [NSArray arrayWithObjects: @"/tmp/BirchMount"]];
+  [task waitUntilExit];
+  [mountProgress stopAnimation: self];
+  isMounting = NO;
 }
 
 - (IBAction) mountNowClicked: (id) sender
 {
-  [mountProgress setUsesThreaded
-  NSLog(@"stub - mountNowClicked");
+  [self mountIt];
 }
 
 - (void) nfsServerStatusChanged: (id) aServer

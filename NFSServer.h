@@ -33,7 +33,8 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 // The dentry lifetime, in seconds.
 #define kDentryLifetime 300
 
-#define kBirchRoot "/Birch"
+#define kBirchRootCstring "/Birch"
+#define kBirchRoot @"/Birch"
 
 @interface NFSServer : NSObject {
   NSMutableDictionary *dentry_cache;
@@ -64,6 +65,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 
 - (Dentry *) lookup: (FileHandle *) aHandle;
 - (void) insert: (Dentry *) aDentry;
+- (void) remove: (FileHandle *) aHandle;
 
 - (RunningQuery *) runningQueryForHandle: (FileHandle *) aHandle;
 - (void) insertRunningQuery: (RunningQuery *) aQuery forHandle: (FileHandle *) aHandle;
