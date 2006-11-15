@@ -161,6 +161,11 @@ static NFSServer *gServer = nil;
   [dentry_cache setObject: aDentry forKey: [aDentry handle]];
 }
 
+- (void) remove: (FileHandle *) aHandle
+{
+  [dentry_cache removeObjectForKey: aHandle];
+}
+
 - (RunningQuery *) runningQueryForHandle: (FileHandle *) aHandle
 {
   return (RunningQuery *) [queries objectForKey: aHandle];
@@ -206,6 +211,10 @@ static NFSServer *gServer = nil;
 - (void) addQueryWithName: (NSString *) aName
                     toDir: (NSString *) aDirname
 {
+#if DEBUG
+  NSLog(@"addQueryWithName: %@ toDir: %@ (root is %@)", aName, aDirname,
+        kBirchRoot);
+#endif // DEBUG
   if ([aDirname isEqual: kBirchRoot])
   {
     [appController newQueryWithName: aName];

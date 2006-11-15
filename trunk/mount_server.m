@@ -78,7 +78,7 @@ mountproc_mnt_1_svc(argp, rqstp)
   NSLog(@"MOUNTD MNT(1) %s", *argp);
   // Use the null file handle for the root dir.
   memset (&(result.fhstatus_u.fhs_fhandle), 0, sizeof (fhstatus)); 
-  if (strcmp (*argp, kBirchRoot) == 0)
+  if (strcmp (*argp, kBirchRootCstring) == 0)
   {
     [[NFSServer server] mount];
     result.fhs_status = 0;
@@ -122,7 +122,7 @@ mountproc_umnt_1_svc(argp, rqstp)
   static char* result;
 
   NSLog(@"MOUNTD UMNT(1) %s", *argp);
-  if (strcmp (*argp, kBirchRoot) == 0)
+  if (strcmp (*argp, kBirchRootCstring) == 0)
   {
     [[NFSServer server] unmount];
   }
@@ -154,7 +154,7 @@ mountproc_export_1_svc(argp, rqstp)
   NSLog(@"MOUNTD EXPORT(1)");
 
   // XXX WTF goes in the groups list?
-  node.ex_dir = kBirchRoot;
+  node.ex_dir = kBirchRootCstring;
   node.ex_groups = NULL;
   node.ex_next = NULL;
   result = &node;
@@ -173,7 +173,7 @@ mountproc_exportall_1_svc(argp, rqstp)
   NSLog(@"MOUNTD EXPORTALL(1)");
 
   // XXX WTF goes in the groups list?
-  node.ex_dir = kBirchRoot;
+  node.ex_dir = kBirchRootCstring;
   node.ex_groups = NULL;
   node.ex_next = NULL;
   result = &node;
@@ -200,7 +200,7 @@ mountproc_mnt_2_svc(argp, rqstp)
   NSLog(@"MOUNTD MNT(2) %s", *argp);
   // Use the null file handle for the root dir.
   memset (&(result.fhstatus_u.fhs_fhandle), 0, sizeof (fhstatus)); 
-  if (strcmp (*argp, kBirchRoot) == 0)
+  if (strcmp (*argp, kBirchRootCstring) == 0)
   {
     [[NFSServer server] mount];
     result.fhs_status = 0;
@@ -227,7 +227,7 @@ mountproc_dump_2_svc(argp, rqstp)
   if ([[NFSServer server] isMounted])
   {
     mb.ml_hostname = "localhost";
-    mb.ml_directory = kBirchRoot;
+    mb.ml_directory = kBirchRootCstring;
     mb.ml_next = NULL;
     result = &mb;
   }
@@ -245,7 +245,7 @@ mountproc_umnt_2_svc(argp, rqstp)
   static char* result;
 
   NSLog(@"MOUNTD UMNT(2) %s", *argp);
-  if (strcmp (*argp, kBirchRoot) == 0)
+  if (strcmp (*argp, kBirchRootCstring) == 0)
   {
     [[NFSServer server] unmount];
   }
@@ -277,7 +277,7 @@ mountproc_export_2_svc(argp, rqstp)
   NSLog(@"MOUNTD EXPORT(2)");
 
   // XXX WTF goes in the groups list?
-  node.ex_dir = kBirchRoot;
+  node.ex_dir = kBirchRootCstring;
   node.ex_groups = NULL;
   node.ex_next = NULL;
   result = &node;
@@ -297,7 +297,7 @@ mountproc_exportall_2_svc(argp, rqstp)
   NSLog(@"MOUNTD EXPORTALL(2)");
 
   // XXX WTF goes in the groups list?
-  node.ex_dir = kBirchRoot;
+  node.ex_dir = kBirchRootCstring;
   node.ex_groups = NULL;
   node.ex_next = NULL;
   result = &node;

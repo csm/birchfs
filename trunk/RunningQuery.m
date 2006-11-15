@@ -60,14 +60,14 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
   return theQuery;
 }
 
-- (int) listingDirs
+- (int) listingMode
 {
   return listing_mode;
 }
 
-- (void) setListingDirs: (bool) aBool
+- (void) setListingMode: (int) aMode
 {
-  listing_dirs = aBool;
+  listing_mode = aMode;
 }
 
 - (int) cookie
@@ -126,13 +126,19 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
   if (query != nil)
   {
     int n = [query resultCount];
+    NSLog(@"looping %d %d", lastCount, n);
     if (n != lastCount)
     {
       if (lastDate != nil)
         [lastDate release];
       lastDate = [[NSDate alloc] init];
       lastCount = n;
+      NSLog(@"stamp %d at %@", lastCount, lastDate);
     }
+  }
+  else
+  {
+    lastDate = [[NSDate alloc] init];
   }
 }
 
@@ -141,7 +147,8 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 {
   if (lastDate == nil)
     return NO;
-  return [lastDate timeIntervalSince1970] > 30;
+  NSLog(@"should give up? last stamp %@", lastDate);
+  return [lastDate timeIntervalSinceNow] < -30;
 }
 
 @end
