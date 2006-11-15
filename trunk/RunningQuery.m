@@ -32,7 +32,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 {
   if ((self = [super init]) != nil)
   {
-    listing_dirs = YES;
+    listing_mode = LISTING_MODE_DIRS;
     cookie = aCookie;
     theQuery = aQuery;
     [theQuery retain];
@@ -60,9 +60,9 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
   return theQuery;
 }
 
-- (bool) listingDirs
+- (int) listingDirs
 {
-  return listing_dirs;
+  return listing_mode;
 }
 
 - (void) setListingDirs: (bool) aBool

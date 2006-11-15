@@ -329,7 +329,9 @@ nfsproc_lookup_2_svc(argp, rqstp)
     return &result;
   }
 
+#if DEBUG
   NSLog(@"NFS LOOKUP fh: %@ name: \"%@\"", handle, name);
+#endif // DEBUG
   
   Dentry *dentry = nil;
   NSString *fullpath = [NSString stringWithFormat:
@@ -364,12 +366,8 @@ nfsproc_lookup_2_svc(argp, rqstp)
     dentry = [srv lookup: target];
     if (dentry == nil)
     {
-      DentryMetafile *meta = [[DentryMetafile alloc]
-        initWithName: name
-        parent: dir
-        handle: target];
-      [srv insert: meta];
-      dentry = meta;
+      result.status = NFSERR_NOENT;
+      return &result;
     }
   }
   else
@@ -689,8 +687,67 @@ nfsproc_create_2_svc(argp, rqstp)
 	struct svc_req *rqstp;
 {
   static diropres result;
-  NSLog(@"NFS CREATE");
-  result.status = NFSERR_PERM;
+  FileHandle *handle = [FileHandle handleWithBytes: argp->where.dir.data];
+  NFSServer *srv = [NFSServer server];
+  NSString *name = [NSString stringWithUTF8String: argp->where.name];
+  Dentry *dentry = [srv lookup: handle];
+
+#if DEBUG
+  NSLog(@"NFS CREATE where:%@ name:%@", handle, name);
+#endif // DEBUG
+
+  if (dentry == nil)
+  {
+    result.status = NFSERR_STALE;
+    return &result;
+  }
+  
+  if (![dentry isDir])
+  {
+    result.status = NFSERR_NOTDIR;
+    return &result;
+  }
+  DentryDirectory *dir = (DentryDirectory *) dentry;
+  
+  FileHandle *target = [FileHandle handleWithPath:
+    [NSString stringWithFormat: @"%@/%@", [dir path], name]];
+  Dentry *targetDentry = [srv lookup: target];
+  if (targetDentry != nil)
+  {
+    result.status = NFSERR_EXIST;
+  }
+  else
+  {
+    DentryMetafile *newfile = [[DentryMetafile alloc]
+      initWithName: name
+      parent: dir
+      handle: target];
+    [newfile autorelease];
+    [srv insert: newfile];
+    result.status = NFS_OK;
+    
+    diropokres *ok = &(result.diropres_u.diropres);
+    memcpy (ok->file.data, [target handle], 32);
+    fattr *attr = &(ok->attributes);
+    attr->type = NFREG;
+    attr->mode = NFSMODE_REG | 0666;
+    attr->nlink = 1;
+    attr->uid = getuid();
+    attr->gid = getgid();
+    attr->size = [newfile size];
+    attr->blocksize = 1024;
+    attr->rdev = 0;
+    attr->blocks = (attr->size + 1023) / 1024;
+    attr->fsid = 1;
+    attr->fileid = [target hash];
+    attr->atime.seconds = [[newfile accessedTime] timeIntervalSince1970];
+    attr->atime.useconds = 0;
+    attr->mtime.seconds = [[newfile modifiedTime] timeIntervalSince1970];
+    attr->mtime.useconds = 0;
+    attr->ctime.seconds = [[newfile createdTime] timeIntervalSince1970];
+    attr->ctime.useconds = 0;    
+  }
+
   return(&result);
 }
 
@@ -699,9 +756,49 @@ nfsproc_remove_2_svc(argp, rqstp)
 	diropargs *argp;
 	struct svc_req *rqstp;
 {
-  static nfsstat result = NFSERR_PERM;
-  NSLog(@"NFS REMOVE");
-  // FIXME: delete directories from subordinate sets/root set.
+  static nfsstat result;
+  FileHandle *handle = [FileHandle handleWithBytes: argp->dir.data];
+  NFSServer *srv = [NFSServer server];
+  Dentry *dentry = [srv lookup: handle];
+  NSString *name = [NSString stringWithUTF8String: argp->name];
+
+#if DEBUG
+  NSLog(@"NFS REMOVE fh:%@ name:%@", handle, name);
+#endif // DEBUG
+  
+  if (dentry == nil)
+  {
+    result = NFSERR_STALE;
+    return &result;
+  }
+  if (![dentry isDir])
+  {
+    result = NFSERR_NOTDIR;
+    return &result;
+  }
+  
+  NSString *fullpath = [NSString stringWithFormat: @"%@/%@", [dentry path], name];
+  FileHandle *target = [FileHandle handleWithPath: fullpath];
+  Dentry *toRemove = [srv lookup: target];
+  if (toRemove == nil)
+  {
+    // Probably not OK, because you may be trying to remove a match file.
+    // But whatever.
+    result = NFS_OK;
+    return &result;
+  }
+  
+  if ([toRemove isKindOfClass: [DentryMetafile class]])
+  {
+    [srv remove: target];
+    [toRemove release]; // clear self-retain.
+    result = NFS_OK;
+  }
+  else
+  {
+    result = NFSERR_PERM;
+  }
+
   return(&result);
 }
 
@@ -710,9 +807,58 @@ nfsproc_rename_2_svc(argp, rqstp)
 	renameargs *argp;
 	struct svc_req *rqstp;
 {
-  static nfsstat result = NFSERR_PERM;
+  static nfsstat result;
+  FileHandle *handleFrom = [FileHandle handleWithBytes: argp->from.dir.data];
+  FileHandle *handleTo = [FileHandle handleWithBytes: argp->to.dir.data];
+  NFSServer *srv = [NFSServer server];
+  Dentry *dentryFrom = [srv lookup: handleFrom];
+  Dentry *dentryTo = [srv lookup: handleTo];
+  NSString *nameFrom = [NSString stringWithUTF8String: argp->from.name];
+  NSString *nameTo = [NSString stringWithUTF8String: argp->to.name];
 
-  // Allow rename of directories?
+#if DEBUG
+  NSLog(@"NFS RENAME (from fh:%@ name:%@) (to fh:%@ name:%@)", handleFrom,
+        nameFrom, handleTo, nameTo);
+#endif // DEBUG
+  
+  if (dentryFrom == nil || dentryTo == nil)
+  {
+    result = NFSERR_STALE;
+    return &result;
+  }
+  if (![dentryFrom isDir] || ![dentryTo isDir])
+  {
+    result = NFSERR_NOTDIR;
+    return &result;
+  }
+  
+  NSString *fullpathFrom = [NSString stringWithFormat: @"%@/%@",
+    [dentryFrom path], nameFrom];
+  NSString *fullpathTo = [NSString stringWithFormat: @"%@/%@",
+    [dentryTo path], nameTo];
+  FileHandle *targetFrom = [FileHandle handleWithPath: fullpathFrom];
+  FileHandle *targetTo = [FileHandle handleWithPath: fullpathTo];
+  Dentry *toRemove = [srv lookup: target];
+  if (toRemove == nil)
+  {
+    // Probably not OK, because you may be trying to remove a match file.
+    // But whatever.
+    result = NFS_OK;
+    return &result;
+  }
+  
+  if ([toRemove isKindOfClass: [DentryMetafile class]])
+  {
+    [srv remove: target];
+    [toRemove release]; // clear self-retain.
+    result = NFS_OK;
+  }
+  else
+  {
+    result = NFSERR_PERM;
+  }
+
+  // XXX Allow rename of directories.
   NSLog(@"NFS RENAME");
 
   return(&result);
@@ -810,6 +956,7 @@ nfsproc_readdir_2_svc(argp, rqstp)
   }
   [dentry access];
   
+  DentryDirectory *dir = (DentryDirectory *) dentry;
   RunningQuery *query = [srv runningQueryForHandle: handle];
 
   if (query == nil)
@@ -828,9 +975,9 @@ nfsproc_readdir_2_svc(argp, rqstp)
   }
   NSString *pwd = [dentry path];
 
-  [query setListingDirs: (cookie & 0x80000000) == 0];
-  int cookieIndex = (cookie & ~0x80000000);
-  if (![query listingDirs] || cookieIndex != 0)
+  [query setListingMode: (cookie & LISTING_MODE_MASK)];
+  int cookieIndex = (cookie & ~LISTING_MODE_MASK);
+  if ([query listingMode] != LISTING_MODE_DIRS || cookieIndex != 0)
     cookieIndex++;
   [query setIndex: cookieIndex];
   
@@ -840,7 +987,7 @@ nfsproc_readdir_2_svc(argp, rqstp)
   for (i = 0; i < argp->count; )
   {
     NSLog(@"i:%d", i);
-    if ([query listingDirs])
+    if ([query listingMode] == LISTING_MODE_DIRS)
     {
       int idx = [query index];
       NSLog(@"DIRS idx:%d", idx);
@@ -930,12 +1077,7 @@ nfsproc_readdir_2_svc(argp, rqstp)
       NSLog(@"looking at subordintes %@", subordinates);
       if ((idx - NUM_SPECIALS) >= [subordinates count])
       {
-        if ([query query] == nil) // not leaf
-        {
-          result.readdirres_u.reply.eof = YES;
-          break;
-        }
-        [query setListingDirs: NO];
+        [query setListingMode: LISTING_MODE_METAFILES];
         [query setIndex: 0];
       }
       else
@@ -965,6 +1107,49 @@ nfsproc_readdir_2_svc(argp, rqstp)
         i += strlen(e->name);
       }
     }
+    else if ([query listingMode] == LISTING_MODE_METAFILES)
+    {
+      int idx = [query index];
+      NSArray *metafiles = [dir metafiles];
+      if (idx >= [metafiles count])
+      {
+        if ([query query] == nil) // not leaf
+        {
+          result.readdirres_u.reply.eof = YES;
+          break;
+        }
+        [query setListingMode: LISTING_MODE_FILES];
+        [query setIndex: 0];        
+      }
+      else
+      {
+        NSString *name = [metafiles objectAtIndex: idx];
+        entry *e = (entry *) malloc (sizeof (struct entry));
+        e->fileid = [[FileHandle handleWithPath: [NSString stringWithFormat: @"%@/%@", pwd, name]] hash];
+        e->name = [name UTF8String];
+        *((int *) e->cookie) = idx;
+        e->nextentry = NULL;
+        if (current == NULL)
+        {
+          current = e;
+          bottom = current;
+        }
+        else
+        {
+          current->nextentry = e;
+          current = e;
+        }
+        [NSData dataWithBytesNoCopy: e
+         length: sizeof(entry)
+         freeWhenDone: YES];
+        idx++;
+        [query setIndex: idx];
+#if DEBUG
+        NSLog(@"    READDIR %@ (REG)", name);
+#endif // DEBUG
+        i += strlen(e->name);
+      }
+    }
     else
     {
       //NSLog(@"listing query matches...");
@@ -972,17 +1157,22 @@ nfsproc_readdir_2_svc(argp, rqstp)
       gaveUp = [query shouldGiveUp];
       if (!gaveUp && [mdq isGathering] && !updatedQuery)
       {
+#if DEBUG
         NSLog(@"query is gathering; running NSRunLoop...");
+#endif // DEBUG
         [[NSRunLoop currentRunLoop] runUntilDate:
           [NSDate dateWithTimeIntervalSinceNow: 1]];
-        NSLog(@"NSRunLoop exits");
-        updatedQuery = YES;
+#if DEBUG
         NSLog(@"we have %d maches for %@", [mdq resultCount], [mdq predicate]);
+#endif // DEBUG
+        updatedQuery = YES;
         [query loop];
       }
 
       int idx = [query index];
+#if DEBUG
       NSLog(@"FILES:%d", idx);
+#endif // DEBUG
       //NSLog(@"idx is now %d of a possible", idx, [mdq resultCount]);
       if (idx >= [mdq resultCount])
       {
@@ -1001,13 +1191,22 @@ nfsproc_readdir_2_svc(argp, rqstp)
         // Bleah.
         //NSLog(@"DentryFile initWithName: %@ parent: %@ handle: %@ realpath: %@",
         //      name, dentry, filehandle, realpath);
-        DentryFile *newfile = [[DentryFile alloc] initWithName: name
-          parent: dentry
-          handle: filehandle
-          realpath: realpath];
-        [newfile autorelease];
-        //NSLog(@"created file dentry %@", newfile);
-        [srv insert: newfile];
+        Dentry *existing = [srv lookup: filehandle];
+        if (existing == nil)
+        {
+          DentryFile *newfile = [[DentryFile alloc] initWithName: name
+            parent: dentry
+            handle: filehandle
+            realpath: realpath];
+          [newfile autorelease];
+          //NSLog(@"created file dentry %@", newfile);
+          [srv insert: newfile];
+        }
+        else if ([dentry isDir])
+        {
+          // We know we already listed this.
+          continue;
+        }
         
         entry *e = (entry *) malloc (sizeof (struct entry));
         e->fileid = [filehandle hash];
@@ -1029,7 +1228,9 @@ nfsproc_readdir_2_svc(argp, rqstp)
          freeWhenDone: YES];
         idx++;
         [query setIndex: idx];
+#if DEBUG
         NSLog(@"    READDIR %@ (LNK)", name);
+#endif // DEBUG
         i += strlen(e->name);
       }
     }
