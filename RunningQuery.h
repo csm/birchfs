@@ -20,9 +20,14 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 #import <Cocoa/Cocoa.h>
 #import "BirchQuery.h"
 
+#define LISTING_MODE_MASK      0xf0000000
+#define LISTING_MODE_DIRS      0
+#define LISTING_MODE_METAFILES 0x40000000
+#define LISTING_MODE_FILES     0x80000000
+
 @interface RunningQuery : NSObject {
   BirchQuery *theQuery;
-  bool listing_dirs;
+  int listing_mode;
   int cookie;
   NSMetadataQuery *query;
   int index;
@@ -35,8 +40,8 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 - (id) initWithCookie: (int) aCookie query: (BirchQuery *) aQuery
   predicate: (NSPredicate *) aPredicate;
 
-- (bool) listingDirs;
-- (void) setListingDirs: (bool) aBool;
+- (int) listingMode;
+- (void) setListingMode: (int) mode;
 - (id) queryInfo;
 - (int) cookie;
 - (NSMetadataQuery *) query;

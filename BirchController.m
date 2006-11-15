@@ -597,8 +597,18 @@ isValidPathname (NSString *name)
   [defaults synchronize];
 }
 
+- (void) mountIt
+{
+  [mountProgress setUsesThreadedAnimation: YES];
+  [mountProgress startAnimation];
+  
+  mount ("nfs", "", MNT_NODEV, "localhost:/Birch");
+  [mountProgress stopAnimation];
+}
+
 - (IBAction) mountNowClicked: (id) sender
 {
+  [mountProgress setUsesThreaded
   NSLog(@"stub - mountNowClicked");
 }
 

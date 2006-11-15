@@ -33,8 +33,9 @@ extern const char kRootHandle[];
        handle: [FileHandle handleWithBytes: zero]]) != nil)
   {
     isRoot = YES;
-    predicate = [NSPredicate predicateWithValue: NO];
+    predicate = nil;
     isLeaf = NO;
+    metafiles = [[NSMutableArray alloc] initWithCapacity: 10];
   }
   
   return self;
@@ -54,6 +55,7 @@ extern const char kRootHandle[];
       predicate = [aPredicate copy];
     else
       predicate = nil;
+    metafiles = [[NSMutableArray alloc] initWithCapacity: 10];
   }
   
   return self;
@@ -76,7 +78,9 @@ extern const char kRootHandle[];
 
 - (void) dealloc
 {
-  [predicate release];
+  if (predicate != nil)
+    [predicate release];
+  [metafiles release];
   [super dealloc];
 }
 
@@ -114,6 +118,27 @@ extern const char kRootHandle[];
   if (parent == nil)
     return isLeaf;
   return [parent isLeaf] || isLeaf;
+}
+
+- (NSArray *) metafiles
+{
+  return [NSArray arrayWithArray: metafiles];
+}
+
+- (void) addMetafile: (NSString *) aName
+{
+  if (![metafiles containsObject: aName])
+  {
+    [metafiles addObject: aName];
+  }
+}
+
+- (void) removeMetafile: (NSString *) aName
+{
+  if ([metafiles containsObject: aName])
+  {
+    [metafiles removeObject: aName];
+  }
 }
 
 @end

@@ -24,6 +24,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
   bool isRoot;
   bool isLeaf;
   NSPredicate *predicate;
+  NSMutableArray *metafiles;
 }
 
 - (id) initWithName: (NSString *) name
@@ -37,6 +38,10 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 - (bool) isRoot;
 - (NSPredicate *) buildPredicate;
 - (NSPredicate *) predicate;
+
+- (NSArray *) metafiles;
+- (void) addMetafile: (NSString *) aName;
+- (void) removeMetafile: (NSString  *) aName;
 
 - (bool) isLeaf;
 
