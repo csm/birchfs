@@ -1,6 +1,7 @@
 /* BirchController */
 
 #import <Cocoa/Cocoa.h>
+#import "ResultsCollector.h"
 
 @interface BirchController : NSApplication
 {
@@ -17,7 +18,7 @@
   IBOutlet NSProgressIndicator *mountProgress;
   IBOutlet NSButton *mountNow;
   IBOutlet NSTableView *mainTable;
-  
+
   BOOL automount;
   NSString *currentQueryName;
   NSDictionary *currentQueryParams;
@@ -33,6 +34,8 @@
   NSUserDefaults *defaults;
   NSLock *queriesLock;
   BOOL isMounting;
+  NSTask *mountTask;
+  ResultsCollector *collector;
 }
 
 - (void) mainTableNotify: (NSNotification *) n;
@@ -48,6 +51,9 @@
 - (IBAction) showResultsClicked: (id) sender;
 - (IBAction) mountOnLaunchClicked: (id) sender;
 - (IBAction) mountNowClicked: (id) sender;
+
+- (void) mountCompleted: (id) arg;
+- (void) mountIt;
 
 - (void) nfsServerStatusChanged: (id) aServer;
 - (NSArray *) queryForName: (NSString *) aName;

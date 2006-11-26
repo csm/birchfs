@@ -126,14 +126,18 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
   if (query != nil)
   {
     int n = [query resultCount];
+#if DEBUG
     NSLog(@"looping %d %d", lastCount, n);
+#endif // DEBUG
     if (n != lastCount)
     {
       if (lastDate != nil)
         [lastDate release];
       lastDate = [[NSDate alloc] init];
       lastCount = n;
+#if DEBUG
       NSLog(@"stamp %d at %@", lastCount, lastDate);
+#endif // DEBUG
     }
   }
   else
@@ -142,13 +146,15 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
   }
 }
 
-// Give up if nothing new has happened in 30 seconds.
+// Give up if nothing new has happened recently.
 - (bool) shouldGiveUp
 {
   if (lastDate == nil)
     return NO;
+#if DEBUG
   NSLog(@"should give up? last stamp %@", lastDate);
-  return [lastDate timeIntervalSinceNow] < -30;
+#endif // DEBUG
+  return [lastDate timeIntervalSinceNow] < -kBirchSearchTimeout;
 }
 
 @end

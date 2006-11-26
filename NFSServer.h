@@ -45,6 +45,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
   int flushCount;
   int cacheFlushCount;
   int mounted;
+  NSLock *runningQueriesLock;
 }
 
 + (NFSServer *) server;
@@ -63,6 +64,9 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 - (void) unmount;
 - (bool) isMounted;
 
+// Sent by the file system code when changes to the file system occur.
+- (void) updated;
+
 - (Dentry *) lookup: (FileHandle *) aHandle;
 - (void) insert: (Dentry *) aDentry;
 - (void) remove: (FileHandle *) aHandle;
@@ -70,6 +74,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 - (RunningQuery *) runningQueryForHandle: (FileHandle *) aHandle;
 - (void) insertRunningQuery: (RunningQuery *) aQuery forHandle: (FileHandle *) aHandle;
 - (void) removeRunningQueryForHandle: (FileHandle *) aHandle;
+- (NSArray *) runningQueries;
 
 - (BirchQuery *) queryForName: (NSString *) aName;
 - (void) addQueryWithName: (NSString *) aName toDir: (NSString *) aDirname;

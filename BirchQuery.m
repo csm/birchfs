@@ -213,9 +213,11 @@ extern NSDictionary *gMdKeys;
    options: 0
    range: NSMakeRange(0, [mvalue length])];
 
+#if DEBUG
   NSLog(@"formatting predicate %@ %@ %@%@%@", key, test, valPrefix,
         value, valSuffix);
-  
+#endif // DEBUG
+
   return [NSPredicate predicateWithFormat:
 //    [NSString stringWithFormat: @"%@ %@ %@%@%@", key, test, valPrefix,
 //     mvalue, valSuffix]];

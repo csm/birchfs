@@ -64,7 +64,10 @@ mountproc_null_1_svc(argp, rqstp)
 	void *argp;
 	struct svc_req *rqstp;
 {
+#if DEBUG
   NSLog(@"MOUNTD NULL(1)");
+#endif // DEBUg
+
   return NULL;
 }
 
@@ -75,7 +78,10 @@ mountproc_mnt_1_svc(argp, rqstp)
 {
   static fhstatus  result;
 
+#if DEBUG
   NSLog(@"MOUNTD MNT(1) %s", *argp);
+#endif // DEBUG
+
   // Use the null file handle for the root dir.
   memset (&(result.fhstatus_u.fhs_fhandle), 0, sizeof (fhstatus)); 
   if (strcmp (*argp, kBirchRootCstring) == 0)
@@ -98,9 +104,11 @@ mountproc_dump_1_svc(argp, rqstp)
 {
   static mountlist result;
   static mountbody mb;
-  
+
+#if DEBUG  
   NSLog(@"MOUNTD DUMP(1)");
-  
+#endif // DEBUG
+
   if ([[NFSServer server] isMounted])
   {
     mb.ml_hostname = "localhost";
@@ -121,7 +129,10 @@ mountproc_umnt_1_svc(argp, rqstp)
 {
   static char* result;
 
+#if DEBUG
   NSLog(@"MOUNTD UMNT(1) %s", *argp);
+#endif // DEBUG
+
   if (strcmp (*argp, kBirchRootCstring) == 0)
   {
     [[NFSServer server] unmount];
@@ -137,8 +148,11 @@ mountproc_umntall_1_svc(argp, rqstp)
 	struct svc_req *rqstp;
 {
   static char* result;
-  
+
+#if DEBUG
   NSLog(@"MOUNTD UMNTALL(1)");
+#endif // DEBUG
+
   [[NFSServer server] unmount];
   return((void*) &result);
 }
@@ -150,8 +164,10 @@ mountproc_export_1_svc(argp, rqstp)
 {
   static exports  result;
   static exportnode node;
-  
+
+#if DEBUG
   NSLog(@"MOUNTD EXPORT(1)");
+#endif // DEBUG
 
   // XXX WTF goes in the groups list?
   node.ex_dir = kBirchRootCstring;
@@ -170,7 +186,9 @@ mountproc_exportall_1_svc(argp, rqstp)
   static exports  result;
   static exportnode node;
 
+#if DEBUG
   NSLog(@"MOUNTD EXPORTALL(1)");
+#endif // DEBUG
 
   // XXX WTF goes in the groups list?
   node.ex_dir = kBirchRootCstring;
@@ -186,7 +204,9 @@ mountproc_null_2_svc(argp, rqstp)
 	void *argp;
 	struct svc_req *rqstp;
 {
+#if DEBUG
   NSLog(@"MOUNTD NULL(2)");
+#endif // DEBUG
   return NULL;
 }
 
@@ -197,7 +217,10 @@ mountproc_mnt_2_svc(argp, rqstp)
 {
   static fhstatus  result;
 
+#if DEBUG
   NSLog(@"MOUNTD MNT(2) %s", *argp);
+#endif // DEBUG
+
   // Use the null file handle for the root dir.
   memset (&(result.fhstatus_u.fhs_fhandle), 0, sizeof (fhstatus)); 
   if (strcmp (*argp, kBirchRootCstring) == 0)
@@ -221,7 +244,9 @@ mountproc_dump_2_svc(argp, rqstp)
   static mountlist  result;
   static mountbody mb;
 
+#if DEBUG
   NSLog(@"MOUNTD DUMP(2)");
+#endif // DEBUG
   
   // XXX can't handle multiple mounts!
   if ([[NFSServer server] isMounted])
@@ -244,7 +269,10 @@ mountproc_umnt_2_svc(argp, rqstp)
 {
   static char* result;
 
+#if DEBUG
   NSLog(@"MOUNTD UMNT(2) %s", *argp);
+#endif // DEBUG
+
   if (strcmp (*argp, kBirchRootCstring) == 0)
   {
     [[NFSServer server] unmount];
@@ -261,7 +289,10 @@ mountproc_umntall_2_svc(argp, rqstp)
 {
   static char* result;
 
+#if DEBUG
   NSLog(@"MOUNTD UMNTALL(2)");
+#endif // DEBUG
+
   [[NFSServer server] unmount];
   return((void*) &result);
 }
@@ -274,7 +305,9 @@ mountproc_export_2_svc(argp, rqstp)
   static exports  result;
   static exportnode node;
 
+#if DEBUG
   NSLog(@"MOUNTD EXPORT(2)");
+#endif // DEBUg
 
   // XXX WTF goes in the groups list?
   node.ex_dir = kBirchRootCstring;
@@ -294,7 +327,9 @@ mountproc_exportall_2_svc(argp, rqstp)
   static exports  result;
   static exportnode node;
 
+#if DEBUG
   NSLog(@"MOUNTD EXPORTALL(2)");
+#endif // DEBUG
 
   // XXX WTF goes in the groups list?
   node.ex_dir = kBirchRootCstring;
@@ -312,7 +347,9 @@ mountproc_pathconf_2_svc(argp, rqstp)
 {
   static ppathcnf  result;
   
+#if DEBUG
   NSLog(@"MOUNTD PATHCONF(2)");
+#endif // DEBUG
 
   result.pc_link_max = 1;
   result.pc_max_canon = 256;
