@@ -49,12 +49,13 @@ model --- directories are queries, files are matches to queries, and a
 path of directories forms a conjunction --- to push an alternative
 data organization into the file system.
 
-We don't consider Birch a success; a combination of the quality of
-searches possible, and the difficulties in making a highly dynamic
-system operate when serving highly synchronous I/O primitives make it
-a far cry from usable. Some of these issues are undoubtedly due to our
-simple definitions of directories and files, and some are because of
-the short development time --- about two months, part time.
+We don't consider Birch a success in its present form; a combination
+of the quality of searches possible, and the difficulties in making a
+highly dynamic system operate when serving highly synchronous I/O
+primitives make it a far cry from usable. Some of these issues are
+undoubtedly due to our simple definitions of directories and files,
+and some are because of the short development time --- about two
+months, part time.
 
 %Birch is named after the trees outside the author's window, and is
 %ironic, since it names something that tries to do away with trees
@@ -99,13 +100,13 @@ attributes. Spotlight uses a key-value mechanism, where a metadata key
 --- for example, \texttt{kMDItemFSName}, which is the key for the
 file's name --- is mapped to a value for each file. Metadata keys can
 reflect file system information, such as the file's name or modified
-time, or it can be \textit{content-based,} giving a richer overview of
-the file's content; this can include anything from a list of authors,
-to the bit rate for digital video and audio, to the color space of
-digital images. Files that don't have a sensible metadata value for a
-given key have a nil result for that key. Spotlight is the metadata
-system we use in Birch, and we find it usable, if lacking in quality
-in some areas.
+time, or they can be \textit{content-based,} giving a richer overview
+of the file's content; this can include anything from a list of
+authors, to the bit rate for digital video and audio, to the color
+space of digital images. Files that don't have a sensible metadata
+value for a given key have a nil result for that key. Spotlight is the
+metadata system we use in Birch, and we find it usable, if lacking in
+quality in some areas.
 
 \section{File System Concepts}
 
@@ -335,7 +336,10 @@ lookups, one string concatenation, and one MD5 computation.
 In order to support certain core OS X applications like the Finder
 better, Birch does support memory-only read/write files, for things
 such as the \texttt{.DS\_Store} file (which Finder uses to store
-window state information).
+window state information). Birch also always contains an empty,
+non-modifiable file \texttt{.metadata\_never\_index} in every
+directory, which prevents Spotlight from indexing the mounted Birch
+file system.
 
 \section{Interpretations and Limitations}
 
@@ -418,9 +422,11 @@ results can render some applications unusable for minutes at a time.
 
 We have taken some measures to improve this, such as adding an
 internal timeout for metadata queries, such that if the query produces
-no more results within 30 seconds, we end the query with the partial
+no new results within 5 seconds, we end the query with the partial
 results. This is of only moderate help, of course, because the
-application will remain unresponsive for up to 30 seconds.
+application will remain unresponsive for up to 5 seconds or longer, if
+(for example) incremental updates to the result set happens every five
+seconds.
 
 Another issue is with queries that match many, many files. These can
 produce directories that contain hundreds of thousands of files, and
@@ -436,6 +442,107 @@ in NFS version 2 and the client-side support built into OS X. We don't
 see any way to force applications to update with partial results,
 while still polling the directory --- many applications simply insist
 on reading an entire directory before returning any results.
+
+\subsection{Forming Conjunctions}
+
+As we have mentioned, a directory path forms a conjunction of all
+predicates in that path. The implementation of this simply forms a new
+\texttt{NSPredicate} with all of the terms joined with the conjunction
+operator, \texttt{\&\&}. Running complicated queries with many terms
+is relatively slow; this can, in principle, be optimized by using the
+results from the partial query and running the additional terms on
+sucessive partial results.
+
+\subsection{File Lookups, Caching, and Consistency}
+
+When a client performs a \texttt{readdir}, all matched files are
+inserted into the dentry cache, so when the client comes back to
+\texttt{lookup} each of these, we will have the entries cached. If a
+file is not in the dentry cache, we are left with the problem of
+looking up a file, which both matches a query (defined by the
+containing directory) \emph{and} the requested file name. This is
+simple enough to define, by forming a conjunction of the query and a
+term that matches \texttt{kMDItemFSName}. This kind of query is very
+slow, especially if it fails to match any files; our only recourse, to
+maintain responsivenes, is to only run these queries briefly,
+returning \texttt{ENOENT} if nothing is found.
+
+This caching strategy works well to avoid this issue: after a
+\texttt{readdir}, chances are that any file that will be looked up
+will exist in the dentry cache. We then, however, have a problem with
+when to expire dentry cache entries: flushing them early will mean
+that subsequent \texttt{lookup} calls will likely fail. Also, since
+the dentry cache can be extremely large, removing the
+least-recently-used entries (the cache is an associative map from file
+handle to directory entry) is time-consuming.
+
+\subsection{Usability}
+
+Our goal when starting this project was to investigate a different,
+and hopefully better, way of presenting files to people using the
+system. While we think there is value in search-based systems, as well
+as presenting these search results in a file system interface,
+navigation of the present implementation is difficult, both because of
+the technical limitations --- the slowness of the system in executing
+large queries, and issues with programs interacting with slow system
+calls --- and the confusion that undoubtedly takes over someone
+navigating a new, alien conceptual space as presented here: we can't
+expect the average person to understand metadata searches and
+conjunctions.
+
+\section{Performance Measurments}
+
+In this test we chose to run some ``primed'' metadata queries --- that
+is, we ran the query once before running the test, to ensure that the
+metadata server is caching that query --- using both \texttt{mdfind}
+(the command-line interface to Spotlight) and \texttt{ls -l} on a
+mounted Birch file system. These tests were run on a MacBook Pro with
+a 1.83GHz Intel Core Duo, and 1GB of RAM. The system has a single 80GB
+SATA hard disk about two thirds full with the author's files. The
+results of these runs are presented in figure~\ref{fig:benchmarks}.
+
+\begin{figure}[ht!]
+\begin{center}
+\begin{tabular}{|l|c|c|r|} \hline
+ \textbf{Query} & \texttt{mdfind}   & \texttt{ls -l} & \textbf{result count} \\ \hline \hline
+\texttt{kMDItemKind == Application} & 0:00.688 & 0:02.043 &   216 \\ \hline
+\texttt{kMDItemFSName == *.txt}     & 0:20.090 & 0:22.701 &  1146 \\ \hline
+\texttt{kMDItemFSSize > 1024 \&\&}  & 2:12.543 & 2:48.835 & 12655 \\
+\texttt{kMDItemFSSize < 1280}       &          &          &       \\ \hline
+\texttt{kMDItemFSSize > 1024 \&\&}  & 2:08.499 & 2:06.944 &    39 \\
+\texttt{kMDItemFSSize < 1280 \&\&}  &          &          &       \\ 
+\texttt{kMDItemFSName == *.txt}     &          &          &       \\ \hline
+\texttt{kMDItemKind == *Image*}     & 0:01.111 & 0:30.731 &  6010 \\ \hline
+\texttt{kMDItemNumberOfPages == 12} & 0:00.545 & 0:00.668 &     5 \\ \hline
+\end{tabular}
+\caption{Query benchmarks}
+\label{fig:benchmarks}
+\end{center}
+\end{figure}
+
+These results seem to show that the bulk of the time spent in the file
+system is running the query, and that the NFS protocol overhead (which
+includes a \texttt{lookup}, \texttt{getattr}, and \texttt{readlink}
+call for every search result) is low. An excellent refinement to Birch
+would be to run queries in the background, caching the results until a
+client arrives to read them. The numbers also indicate that
+complicated queries that use wildcard patterns, have many terms, or
+read certain attributes take more resources to run. 
+
+\section{Conclusion}
+
+We have presented a prototype file system that renders search queries
+as files and directories. There are some technical hurdles left to
+overcome, especially in the area of performance, and given that many
+applications wind up reading dynamic, asynchronous results with a
+highly synchronous API. The Spotlight metadata service is useful in
+this project because it already exists, and provides a number of
+interesting fields to search, but is in our opinion too limited 
+
+In the course of developing this project, we uncovered a bug in the OS
+X NFS client support, which resides in the kernel. An early version of
+Birch was able to cause a kernel panic, simply by returning malformed
+NFS RPC replies.
 
 \bibliography{Sources}
 

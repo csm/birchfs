@@ -37,6 +37,7 @@ static NFSServer *gServer = nil;
     serverPool = nil;
     flushCount = 0;
     cacheFlushCount = 0;
+    runningQueriesLock = [[NSLock alloc] init];
   }
   return self;
 }
@@ -145,6 +146,12 @@ static NFSServer *gServer = nil;
   return (mounted > 0);
 }
 
+- (void) updated
+{
+  [appController updatePanelForSelection];
+  [appController syncDefaults];
+}
+
 - (Dentry *) lookup: (FileHandle *) aHandle
 {
   Dentry *root = [DentryDirectory root];
@@ -157,7 +164,6 @@ static NFSServer *gServer = nil;
 
 - (void) insert: (Dentry *) aDentry
 {
-  FileHandle *handle = [aDentry handle];
   [dentry_cache setObject: aDentry forKey: [aDentry handle]];
 }
 
@@ -168,18 +174,33 @@ static NFSServer *gServer = nil;
 
 - (RunningQuery *) runningQueryForHandle: (FileHandle *) aHandle
 {
-  return (RunningQuery *) [queries objectForKey: aHandle];
+  [runningQueriesLock lock];
+  RunningQuery *ret = (RunningQuery *) [queries objectForKey: aHandle];
+  [runningQueriesLock unlock];
+  return ret;
 }
 
 - (void) insertRunningQuery: (RunningQuery *) aQuery
                   forHandle: (FileHandle *) aHandle
 {
+  [runningQueriesLock lock];
   [queries setObject: aQuery forKey: aHandle];
+  [runningQueriesLock unlock];
 }
 
 - (void) removeRunningQueryForHandle: (FileHandle *) aHandle
 {
+  [runningQueriesLock lock];
   [queries removeObjectForKey: aHandle];
+  [runningQueriesLock unlock];
+}
+
+- (NSArray *) runningQueries
+{
+  [runningQueriesLock lock];
+  NSArray *ret = [queries allValues];
+  [runningQueriesLock unlock];
+  return ret;
 }
 
 - (BirchQuery *) queryForName: (NSString *) aName
@@ -195,14 +216,14 @@ static NFSServer *gServer = nil;
     else
     {
       array = [appController queryForName: aName];
-      [array replaceObjectAtIndex: 5 withObject: [appController queryNames]];
     }
   }
   
   if (array != nil)
   {
+#if DEBUG
     NSLog(@"looked up query array %@ for name %@", array, aName);
-  
+#endif // DEBUG  
     return [BirchQuery queryWithArray: array];
   }
   return nil;
@@ -243,13 +264,28 @@ static NFSServer *gServer = nil;
 - (void) runServerLoop: (id) anAgrument
 {
   [self flushPool];
+#if DEBUG
   NSLog(@"launching NFS server thread");
+#endif // DEBUG
+
   [self setState: NFSServerStarting];
+
+#if DEBUG
   NSLog(@"setting up MOUNT server...");
+#endif // DEBUG
+
   int ret = mount_setup (0, NULL);
+
+#if DEBUG
   NSLog(@"mount_setup returns status %d", ret);
+#endif // DEBUG
+
   ret = nfs_main (0, NULL);
+
+#if DEBUG
   NSLog(@"server thread exited with status %d!", ret);
+#endif // DEBUG
+
   [self setState: NFSServerExited];
 }
 

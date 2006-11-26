@@ -87,6 +87,7 @@ static int _rpcsvcdirty;	/* Still serving ? */
 static
 void _msgout(char *fmt, ...)
 {
+#if DEBUG
   va_list ap;
   char msgbuf[256];
 
@@ -96,6 +97,7 @@ void _msgout(char *fmt, ...)
                    encoding: NSASCIIStringEncoding];
   NSLog(@"%@", str);
   va_end(ap);
+#endif // DEBUG
 }
 
 static void

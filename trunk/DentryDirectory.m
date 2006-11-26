@@ -93,7 +93,7 @@ extern const char kRootHandle[];
 {
   if (parent == nil)
     return nil;
-  if ([parent isRoot])
+  if ([((DentryDirectory *) parent) isRoot])
     return [[predicate copy] autorelease];
   if (predicate == nil)
     return [((DentryDirectory *) parent) buildPredicate];
@@ -117,7 +117,7 @@ extern const char kRootHandle[];
 {
   if (parent == nil)
     return isLeaf;
-  return [parent isLeaf] || isLeaf;
+  return [((DentryDirectory *) parent) isLeaf] || isLeaf;
 }
 
 - (NSArray *) metafiles

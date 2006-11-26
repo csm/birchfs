@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		7004C49F0B0506A90065EBFD /* DentryMetafile.m in Sources */ = {isa = PBXBuildFile; fileRef = 7004C49E0B0506A90065EBFD /* DentryMetafile.m */; };
+		7004C85D0B17A7B70065EBFD /* DentryTempDirectory.m in Sources */ = {isa = PBXBuildFile; fileRef = 7004C85C0B17A7B60065EBFD /* DentryTempDirectory.m */; };
+		7004C9330B17D72C0065EBFD /* ResultsCollector.m in Sources */ = {isa = PBXBuildFile; fileRef = 7004C9320B17D72C0065EBFD /* ResultsCollector.m */; };
 		7016CA9C0ADF198100F185D2 /* BirchController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7016CA9B0ADF198100F185D2 /* BirchController.m */; };
 		7016CD1B0AE7358600F185D2 /* Birch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7016CD1A0AE7358400F185D2 /* Birch.icns */; };
 		7016CDC80AE982E000F185D2 /* NFSServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 7016CDC70AE982E000F185D2 /* NFSServer.m */; };
@@ -42,6 +44,10 @@
 		32CA4F630368D1EE00C91783 /* Birch_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Birch_Prefix.pch; sourceTree = "<group>"; };
 		7004C49D0B0506A90065EBFD /* DentryMetafile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DentryMetafile.h; sourceTree = "<group>"; };
 		7004C49E0B0506A90065EBFD /* DentryMetafile.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DentryMetafile.m; sourceTree = "<group>"; };
+		7004C85B0B17A7B60065EBFD /* DentryTempDirectory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DentryTempDirectory.h; sourceTree = "<group>"; };
+		7004C85C0B17A7B60065EBFD /* DentryTempDirectory.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DentryTempDirectory.m; sourceTree = "<group>"; };
+		7004C9310B17D72C0065EBFD /* ResultsCollector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ResultsCollector.h; sourceTree = "<group>"; };
+		7004C9320B17D72C0065EBFD /* ResultsCollector.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ResultsCollector.m; sourceTree = "<group>"; };
 		7016CA9A0ADF198100F185D2 /* BirchController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BirchController.h; sourceTree = "<group>"; };
 		7016CA9B0ADF198100F185D2 /* BirchController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = BirchController.m; sourceTree = "<group>"; };
 		7016CD1A0AE7358400F185D2 /* Birch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = Birch.icns; sourceTree = "<group>"; };
@@ -110,6 +116,8 @@
 				70BA74AB0AF2A33200E2CB16 /* DentryFile.m */,
 				7004C49D0B0506A90065EBFD /* DentryMetafile.h */,
 				7004C49E0B0506A90065EBFD /* DentryMetafile.m */,
+				7004C85B0B17A7B60065EBFD /* DentryTempDirectory.h */,
+				7004C85C0B17A7B60065EBFD /* DentryTempDirectory.m */,
 				70BA748C0AF1795800E2CB16 /* FileHandle.h */,
 				70BA748D0AF1795800E2CB16 /* FileHandle.m */,
 				70BA76A10AFBC72D00E2CB16 /* HeapBuffer.h */,
@@ -117,6 +125,8 @@
 				7016CDC60AE982E000F185D2 /* NFSServer.h */,
 				7016CDC70AE982E000F185D2 /* NFSServer.m */,
 				7016CE990AED821100F185D2 /* NFSServerState.h */,
+				7004C9310B17D72C0065EBFD /* ResultsCollector.h */,
+				7004C9320B17D72C0065EBFD /* ResultsCollector.m */,
 				70BA77370AFBD59D00E2CB16 /* RunningQuery.h */,
 				70BA77380AFBD59D00E2CB16 /* RunningQuery.m */,
 				70C29BCC0AFE8EAD006C581C /* constants.h */,
@@ -281,6 +291,8 @@
 				70BA77390AFBD59D00E2CB16 /* RunningQuery.m in Sources */,
 				7018A3980B00243E007911F2 /* DentryEmptyfile.m in Sources */,
 				7004C49F0B0506A90065EBFD /* DentryMetafile.m in Sources */,
+				7004C85D0B17A7B70065EBFD /* DentryTempDirectory.m in Sources */,
+				7004C9330B17D72C0065EBFD /* ResultsCollector.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

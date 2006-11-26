@@ -20,6 +20,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 #import "BirchController.h"
 #import "NFSServer.h"
 #import "BirchMetadataKind.h"
+#import "ResultsCollector.h"
 #import "constants.h"
 
 #import <sys/types.h>
@@ -46,7 +47,9 @@ static id mdpair (NSString *str, enum BirchMetadataKind kind)
 
 - (id) init
 {
+#if DEBUG
   NSLog(@"init");
+#endif // DEBUG
   if ((self = [super init]) != nil)
   {
     // FIXME - manage these keys in a plist or something.
@@ -176,16 +179,23 @@ static id mdpair (NSString *str, enum BirchMetadataKind kind)
      nil]];
     selectedQuery = -1;
     queriesLock = [[NSLock alloc] init];
+    
+    collector = [[ResultsCollector alloc] initWithController: self];
   }
-  
+
+#if DEBUG
   NSLog(@"init out");
+#endif // DEBUG
   
   return self;
 }
 
 - (void) awakeFromNib
 {
+#if DEBUG
   NSLog(@"awaking from nib");
+#endif // DEBUG
+
   doMountOnLaunch = [defaults boolForKey: kBirchAutomountDefault];
   if (doMountOnLaunch)
   {
@@ -230,12 +240,20 @@ static id mdpair (NSString *str, enum BirchMetadataKind kind)
    toTarget: server withObject: nil];
    
   [mainTable reloadData];
+  
+  [NSThread detachNewThreadSelector: @selector(run:) toTarget: collector
+    withObject: nil];
+    
+#if DEBUG
   NSLog(@"awoken!");
+#endif // DEBUG
 }
 
 - (void) mainTableNotify: (NSNotification *) n
 {
-  NSLog([NSString stringWithFormat: @"notified! %@", n]);
+#if DEBUG
+  NSLog(@"notified! %@", n);
+#endif // DEBUG
   selectedQuery = [mainTable selectedRow];
   [self updatePanelForSelection];
 }
@@ -257,23 +275,24 @@ static id mdpair (NSString *str, enum BirchMetadataKind kind)
   NSArray *query = [queries objectAtIndex: selectedQuery];
   [nameField setEnabled: YES];
   [nameField setStringValue: (NSString *) [query objectAtIndex: 0]];
-  NSLog([NSString stringWithFormat: @"query name %@", query]);
+#if DEBUG
+  NSLog(@"query name %@", query);
+#endif // DEBUG
 
   NSNumber *isLeaf = [query objectAtIndex: 1];
   [showResults setState: ([isLeaf boolValue] ? NSOnState : NSOffState)];
   [showResults setEnabled: YES];
-  NSLog([NSString stringWithFormat: @"is leaf %d", [isLeaf intValue]]);
+#if DEBUG
+  NSLog(@"is leaf %d", [isLeaf intValue]);
+#endif // DEBUG
   
   NSString *kind = [query objectAtIndex: 2];
-  NSLog([NSString stringWithFormat: @"kind %@", kind]);
   int idx = [mdKeyNames indexOfObject: kind];
-  NSLog([NSString stringWithFormat: @"index of that %d", idx]);
   [queryKey selectItemAtIndex: idx];
   [queryKey setEnabled: YES];
   
   if ([kind isEqualToString: kWildcard])
   {
-    NSLog(@"clear for wildcard");
     [queryType setEnabled: NO];
     [queryValue setStringValue: @""];
     [queryValue setEnabled: NO];
@@ -292,37 +311,37 @@ static id mdpair (NSString *str, enum BirchMetadataKind kind)
     switch (kind)
     {
       case kBirchMetadataKindWildcard:
-	idx = -1;
-	break;
+        idx = -1;
+        break;
 
       case kBirchMetadataKindArray:
-	[queryType setNumberOfVisibleItems: [mdComparisonsArrays count]];
-	idx = [mdComparisonsArrays indexOfObject: test];
-	break;
+        [queryType setNumberOfVisibleItems: [mdComparisonsArrays count]];
+        idx = [mdComparisonsArrays indexOfObject: test];
+        break;
 
       case kBirchMetadataKindDate:
-	[queryType setNumberOfVisibleItems: [mdComparisonsDates count]];
-	idx = [mdComparisonsArrays indexOfObject: test];
-	break;
+        [queryType setNumberOfVisibleItems: [mdComparisonsDates count]];
+        idx = [mdComparisonsArrays indexOfObject: test];
+        break;
 
       case kBirchMetadataKindString:
-	[queryType setNumberOfVisibleItems: [mdComparisonsStrings count]];
-	idx = [mdComparisonsStrings indexOfObject: test];
-	break;
+        [queryType setNumberOfVisibleItems: [mdComparisonsStrings count]];
+        idx = [mdComparisonsStrings indexOfObject: test];
+        break;
 
       case kBirchMetadataKindNumber:
-	[queryType setNumberOfVisibleItems: [mdComparisonsNumbers count]];
-	idx = [mdComparisonsNumbers indexOfObject: test];
-	break;
+        [queryType setNumberOfVisibleItems: [mdComparisonsNumbers count]];
+        idx = [mdComparisonsNumbers indexOfObject: test];
+        break;
     }
     
     if (idx != -1)
       [queryType selectItemAtIndex: idx];
     else
       {
-	idx = [queryType indexOfSelectedItem];
-	if (idx != -1)
-	  [queryType deselectItemAtIndex: idx];
+        idx = [queryType indexOfSelectedItem];
+        if (idx != -1)
+          [queryType deselectItemAtIndex: idx];
       }
     [queryType setEnabled: YES];
     
@@ -330,7 +349,6 @@ static id mdpair (NSString *str, enum BirchMetadataKind kind)
     [queryValue setEnabled: YES];
   }
   
-  NSLog(@"enable remove button");
   [removeButton setEnabled: YES];
 }
 
@@ -371,12 +389,17 @@ isValidPathname (NSString *name)
     return NO;
   if ([name isEqual: @".."])
     return NO;
+  if ([name isEqual: @"untitled folder"])
+    return NO;
   return YES;
 }
 
 - (IBAction) addQueryClicked: (id) sender
 {
+#if DEBUG
   NSLog(@"LOCK %@", queriesLock);
+#endif // DEBUG
+
   [queriesLock lock];
   NSMutableArray *newQuery = [NSMutableArray arrayWithCapacity: 6];
   NSString *name = @"New Query";
@@ -398,8 +421,11 @@ isValidPathname (NSString *name)
   selectedQuery = [queries count] - 1;
   [mainTable selectRow: selectedQuery byExtendingSelection: NO];
   [self updatePanelForSelection];
+#if DEBUG
   NSLog(@"UNLOCK %@", queriesLock);
+#endif // DEBUG
   [queriesLock unlock];
+  [[DentryDirectory root] modify];
 }
 
 - (IBAction) delQueryClicked: (id) sender
@@ -411,7 +437,9 @@ isValidPathname (NSString *name)
       NSLog(@"invalid query index %d", selectedQuery);
       return;
     }
+#if DEBUG
     NSLog(@"LOCK %@", queriesLock);
+#endif // DEBUG
     [queriesLock lock];
     NSArray *removed = [queries objectAtIndex: selectedQuery];
     NSString *oldname = [removed objectAtIndex: 0];
@@ -436,8 +464,11 @@ isValidPathname (NSString *name)
     // removal changes selection.
     selectedQuery = [mainTable selectedRow];
     [self updatePanelForSelection];
+#if DEBUG
     NSLog(@"UNLOCK %@", queriesLock);
+#endif // DEBUG
     [queriesLock unlock];
+    [[DentryDirectory root] modify];
   }
 }
 
@@ -445,7 +476,9 @@ isValidPathname (NSString *name)
 {
   if (selectedQuery == -1)
     return;
+#if DEBUG
   NSLog(@"LOCK %@", queriesLock);
+#endif // DEBUG
   [queriesLock lock];
   NSString *name = [nameField stringValue];
   NSMutableArray *query = [queries objectAtIndex: selectedQuery];
@@ -453,14 +486,18 @@ isValidPathname (NSString *name)
 
   if ([name isEqualToString: oldname])
   {
+#if DEBUG
     NSLog(@"UNLOCK %@", queriesLock);
+#endif // DEBUG
     [queriesLock unlock];
     return; // didn't change
   }
   if (nameTaken (name, queries) || !isValidPathname(name))
   {
     NSBeep();
+#if DEBUG
     NSLog(@"UNLOCK %@", queriesLock);
+#endif // DEBUG
     [queriesLock unlock];
     return;
   }
@@ -484,8 +521,11 @@ isValidPathname (NSString *name)
   [mainTable reloadData];
   [defaults setObject: queries forKey: kBirchQueriesDefault];
   [defaults synchronize];
+#if DEBUG
   NSLog(@"UNLOCK %@", queriesLock);
+#endif // DEBUG
   [queriesLock unlock];
+  [[DentryDirectory root] modify];
 }
 
 - (IBAction) selectedMetadataKey: (id) sender
@@ -535,6 +575,7 @@ isValidPathname (NSString *name)
   }
   [defaults setObject: queries forKey: kBirchQueriesDefault];
   [defaults synchronize];
+  [[DentryDirectory root] modify];
 }
 
 - (IBAction) selectedMetadataTest: (id) sender
@@ -570,6 +611,7 @@ isValidPathname (NSString *name)
   [query replaceObjectAtIndex: 3 withObject: type];
   [defaults setObject: queries forKey: kBirchQueriesDefault];
   [defaults synchronize];
+  [[DentryDirectory root] modify];
 }
 
 - (IBAction) enteredMetadataValue: (id) sender
@@ -580,6 +622,7 @@ isValidPathname (NSString *name)
   [query replaceObjectAtIndex: 4 withObject: [queryValue stringValue]];
   [defaults setObject: queries forKey: kBirchQueriesDefault];
   [defaults synchronize];
+  [[DentryDirectory root] modify];
 }
 
 - (IBAction) showResultsClicked: (id) sender
@@ -591,6 +634,7 @@ isValidPathname (NSString *name)
    withObject: [NSNumber numberWithBool: ([showResults state] == NSOnState)]];
   [defaults setObject: queries forKey: kBirchQueriesDefault];
   [defaults synchronize];
+  [[DentryDirectory root] modify];
 }
 
 - (IBAction) mountOnLaunchClicked: (id) sender
@@ -600,45 +644,58 @@ isValidPathname (NSString *name)
   [defaults synchronize];
 }
 
+- (void) mountCompleted: (id) arg
+{
+  NSString *dirname = [NSString stringWithFormat: @"/tmp/BirchMount-%d",
+    getuid()];
+  if (mountTask != nil)
+  {
+    [mountTask release];
+    mountTask = nil;
+  }
+  
+  [mountProgress stopAnimation: self];
+  isMounting = NO;
+  NSTask *task = [NSTask launchedTaskWithLaunchPath: @"/usr/bin/open"
+    arguments: [NSArray arrayWithObjects: dirname, nil]];
+}
+
 - (void) mountIt
 {
+  NSString *dirname = [NSString stringWithFormat: @"/tmp/BirchMount-%d",
+    getuid()];
   if (isMounting)
     return;
   isMounting = YES;
   [mountProgress setUsesThreadedAnimation: YES];
   [mountProgress startAnimation: self];
   struct stat st;
-  if (stat ("/tmp/BirchMount", &st) == 0)
+  if (stat ([dirname UTF8String], &st) == 0)
   {
     if ((st.st_mode & S_IFMT) != S_IFDIR)
     {
-      NSLog(@"ERROR! /tmp/BirchMount not a directory!");
-      [mountProgress stopAnimation];
+#if DEBUG
+      NSLog(@"ERROR! %@ not a directory!", dirname);
+#endif // DEBUG
+      [mountProgress stopAnimation: self];
       isMounting = NO;
       return;
     }
   }
   else
   {
-    mkdir ("/tmp/BirchMount", 0755);
+    mkdir ([dirname UTF8String], 0755);
   }
-  NSTask *task = [NSTask launchedTaskWithLaunchPath: @"/sbin/mount_nfs"
+  mountTask = [NSTask launchedTaskWithLaunchPath: @"/sbin/mount_nfs"
     arguments: [NSArray arrayWithObjects: @"-2", @"localhost:/Birch",
-      @"/tmp/BirchMount", nil ]];
-  [task waitUntilExit];
-  int ret = [task teminationStatus];
-  if (ret != 0)
-  {
-    NSLog(@"mount_nfs returned with status %d", ret);
-    isMounting = NO;
-    return;
-  }
-  
-  task = [NSTask launchedTaskWithLaunchPath: @"/usr/bin/open"
-    arguments: [NSArray arrayWithObjects: @"/tmp/BirchMount"]];
-  [task waitUntilExit];
-  [mountProgress stopAnimation: self];
-  isMounting = NO;
+      dirname, nil ]];
+  [mountTask retain];
+      
+  NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
+  [nc addObserver: self
+         selector: @selector(mountCompleted:)
+             name: NSTaskDidTerminateNotification
+           object: mountTask];
 }
 
 - (IBAction) mountNowClicked: (id) sender
@@ -694,7 +751,9 @@ isValidPathname (NSString *name)
 
 - (NSArray *) queryNames
 {
+#if DEBUG
   NSLog(@"LOCK %@", queriesLock);
+#endif // DEBUG
   [queriesLock lock];
   int i;
   const int n = [queries count];
@@ -705,15 +764,19 @@ isValidPathname (NSString *name)
     NSArray *a = (NSArray *) [queries objectAtIndex: i];
     [list addObject: [a objectAtIndex: 0]];
   }
-  
+
+#if DEBUG
   NSLog(@"UNLOCK %@", queriesLock);
+#endif // DEBUG
   [queriesLock unlock];
   return list;
 }
 
 - (void) newQueryWithName: (NSString *) aName
 {
+#if DEBUG
   NSLog(@"LOCK %@", queriesLock);
+#endif // DEBUG
   [queriesLock lock];
   int i;
   const int n = [queries count];
@@ -736,13 +799,16 @@ isValidPathname (NSString *name)
   [newQuery addObject: @""];
   [newQuery addObject: [NSMutableArray arrayWithCapacity: 10]];
   [queries addObject: newQuery];
-  
+
+#if DEBUG
   NSLog(@"UNLOCK %@", queriesLock);
+#endif // DEBUG
   [queriesLock unlock];
 }
 
 - (void) syncDefaults
 {
+  [defaults setObject: queries forKey: kBirchQueriesDefault];
   [defaults synchronize];
 }
 
@@ -757,7 +823,6 @@ isValidPathname (NSString *name)
     if (selectedQuery == -1)
       return 0;
 
-    NSLog([NSString stringWithFormat: @"queries %@", queries]);
     NSArray *query = [queries objectAtIndex: selectedQuery];
     NSArray *pair = [mdKeys objectForKey: [query objectAtIndex: 2]];
     if (pair == nil)
@@ -768,19 +833,19 @@ isValidPathname (NSString *name)
     switch (kind)
     {
       case kBirchMetadataKindWildcard:
-	return 0;
+        return 0;
 
       case kBirchMetadataKindArray:
-	return [mdComparisonsArrays count];
+        return [mdComparisonsArrays count];
 
       case kBirchMetadataKindDate:
-	return [mdComparisonsDates count];
+        return [mdComparisonsDates count];
 
       case kBirchMetadataKindString:
-	return [mdComparisonsStrings count];
+        return [mdComparisonsStrings count];
 
       case kBirchMetadataKindNumber:
-	return [mdComparisonsNumbers count];
+        return [mdComparisonsNumbers count];
     }
   }
   return -1;
@@ -807,19 +872,19 @@ isValidPathname (NSString *name)
     switch (kind)
     {
       case kBirchMetadataKindWildcard:
-	return nil;
+        return nil;
 
       case kBirchMetadataKindArray:
-	return [mdComparisonsArrays objectAtIndex: index];
+        return [mdComparisonsArrays objectAtIndex: index];
 
       case kBirchMetadataKindDate:
-	return [mdComparisonsDates objectAtIndex: index];
+        return [mdComparisonsDates objectAtIndex: index];
 
       case kBirchMetadataKindString:
-	return [mdComparisonsStrings objectAtIndex: index];
+        return [mdComparisonsStrings objectAtIndex: index];
 
       case kBirchMetadataKindNumber:
-	return [mdComparisonsNumbers objectAtIndex: index];
+        return [mdComparisonsNumbers objectAtIndex: index];
     }
   }
   return nil;

@@ -88,6 +88,7 @@ static int _rpcsvcdirty;	/* Still serving ? */
 static
 void _msgout(char *fmt, ...)
 {
+#if DEBUG
   va_list ap;
   char msgbuf[256];
 
@@ -97,6 +98,7 @@ void _msgout(char *fmt, ...)
                    encoding: NSASCIIStringEncoding];
   NSLog(@"%@", str);
   va_end(ap);
+#endif // DEBUG
 }
 
 static void
@@ -263,7 +265,7 @@ nfs_program_2(rqstp, transp)
 		svcerr_noproc(transp);
 		_rpcsvcdirty = 0;
 		[[NFSServer server] flushPool];
-    [[NFSServer server] flushCache];
+//    [[NFSServer server] flushCache];
 		return;
 	}
 	(void) memset((char *)&argument, 0, sizeof (argument));
@@ -271,7 +273,7 @@ nfs_program_2(rqstp, transp)
 		svcerr_decode(transp);
 		_rpcsvcdirty = 0;
 		[[NFSServer server] flushPool];
-    [[NFSServer server] flushCache];
+//    [[NFSServer server] flushCache];
 		return;
 	}
 	result = (*local)(&argument, rqstp);
@@ -285,7 +287,7 @@ nfs_program_2(rqstp, transp)
 	_rpcsvcdirty = 0;
 	
 	[[NFSServer server] flushPool];
-  [[NFSServer server] flushCache];
+//  [[NFSServer server] flushCache];
 	return;
 }
 
@@ -323,7 +325,7 @@ char *argv[];
   for (i = ifap; i != NULL; i = i->ifa_next)
   {
     if (strncmp (i->ifa_name, "lo", 2) == 0
-	&& i->ifa_addr->sa_family == AF_INET)
+        && i->ifa_addr->sa_family == AF_INET)
     {
       memcpy(&(localhost.sin_addr.s_addr),
 	     &(((struct sockaddr_in *) i->ifa_addr)->sin_addr.s_addr),

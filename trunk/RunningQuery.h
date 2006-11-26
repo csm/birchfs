@@ -20,6 +20,8 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 #import <Cocoa/Cocoa.h>
 #import "BirchQuery.h"
 
+#define kBirchSearchTimeout    10
+
 #define LISTING_MODE_MASK      0xf0000000
 #define LISTING_MODE_DIRS      0
 #define LISTING_MODE_METAFILES 0x40000000
