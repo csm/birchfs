@@ -44,10 +44,16 @@ classification, and can fit into many different taxonomies.
 These limitations of hierarchical file systems have been expounded
 upon by many others \cite{OToole:1992, Nielsen:1996, Gorter:2004,
   Nickell:2006}, and yet, few alternatives seem to gain traction in
-wide use. Birch is an experimental file system that uses a simple
+wide use.  We, along with others~\cite{Veda:2005}, think that new,
+better information-centric interfaces will appear in future computer
+systems.
+
+Birch is an experimental file system that uses a simple
 model --- directories are queries, files are matches to queries, and a
 path of directories forms a conjunction --- to push an alternative
-data organization into the file system.
+data organization into the file system. Birch uses an existing
+metadata search system, Spotlight, and renders Spotlight metadata
+searches as a file system.
 
 We don't consider Birch a success in its present form; a combination
 of the quality of searches possible, and the difficulties in making a
@@ -63,15 +69,15 @@ months, part time.
 
 \section{Related Work}
 
-We have already seen alternative interfaces for computer files through
-client applications that access certain kinds of computer files in a
-non-hierarchical way: Apple's iTunes accesses music and video files in
-ways based on content, and through playlists the user can create and
-edit. The Finder application supports so-called ``smart folders,''
-which use the Spotlight metadata service to display a simple
-metadata query as a folder. All of these are useful, but are
-orthogonal to one another --- groupings made in one application cannot
-be used in other applications.
+We have already seen alternative interfaces in client applications
+that access certain kinds of computer files in a non-hierarchical way:
+Apple's iTunes accesses music and video files based on content, and
+through play lists the user can create and edit. The Finder
+application supports so-called ``smart folders,'' which use the
+Spotlight metadata service to display a simple metadata query as a
+folder. All of these are useful, but are orthogonal to one another ---
+groupings made in one application cannot be used in other
+applications.
 
 There have been efforts to provide similar, general-purpose user
 interfaces --- a database file system, as an alternative file manager
@@ -161,11 +167,11 @@ makes this kind of management difficult and error-prone. If we were to
 try to maintain set semantics given the low-level file I/O functions,
 the system would quickly collapse.
 
-Instead, in Birch, every directory represents a predicate --- a simple
-metadata query, such as ``name equals `foo','' that is, an assertion
-about a file's attributes that has a boolean result; such a predicate,
-when tested on a collection of files, defines a set. The intersection
-of two sets is then defined as the conjunction of the two
+An alternative is having every directory represent a predicate --- a
+simple metadata query, such as ``name equals `foo'.'' That is, an
+assertion about a file's attributes that has a boolean result; such a
+predicate, when tested on a collection of files, defines a set. The
+intersection of two sets is then defined as the conjunction of the two
 directory-sets' predicates. There is currently no explicit way to
 define a disjunction of two or more predicates, but this may be a
 future extension to the system: wherein each directory-set represents
@@ -178,29 +184,28 @@ companion, and thus it is of sufficient power to express any query.
 
 In order to reference an existing set when building a path, our system
 requires that set names are global. This has some obvious drawbacks,
-since it replaces, in the user's experience, a heirarchical naming
+since it replaces, in the user's experience, a hierarchical naming
 burden --- the burden of organizing files in a sensible directory
-heirarchy --- into a flat naming burden --- that of coming up with a
+hierarchy --- into a flat naming burden --- that of coming up with a
 unique name for each query.
 
-This is not, we believe, as bad as it sounds. Since queries are
-inherently more powerful than directories, and because they are
-reusable in many places, there should be fewer queries than
-directories. Query names can be evocative of their function, so the
-query named ``Author is Brian Eno'' would be a query that looked for
-files where the ``author'' is Brian Eno. It is still up to the person
-using the system to invent a good name for a query, but naming queries
-can be simple, if the name is evocative of the function. 
+This is not as bad as it sounds. Since queries are inherently more
+powerful than directories, and because they are reusable in many
+places, there should be fewer queries than directories. Query names
+can be evocative of their function, so the query named ``Author is
+Brian Eno'' would be a query that looked for files where the
+``author'' is Brian Eno. It is still up to the person using the system
+to invent a good name for a query, but naming queries can be simple,
+if the name is evocative of the function.
 
 \section{Implementation}
 
-We now describe our file system implementation. This file system is
-implemented as a Cocoa application that creates a user-space NFS
-system, and NFS RPC calls (which, naturally, only come over a local
-socket instead of over the network) are interpreted to render metadata
-search queries as files and directories. A simple Cocoa user interface
-(shown in figure~\ref{figure:mainwindow}) manages the search queries
-the filesystem renders. Queries are composed using the
+Birch is implemented as a Cocoa application that creates a user-space
+NFS system, and NFS RPC calls (which only come over a local socket
+instead of over the network) are interpreted to render metadata search
+queries as files and directories. A simple Cocoa user interface (shown
+in figure~\ref{figure:mainwindow}) manages the search queries the
+file system renders. Queries are composed using the
 \texttt{NSPredicate} and \texttt{NSMetadataQuery} classes, which
 access the Spotlight metadata database.
 
@@ -257,7 +262,7 @@ path would be \texttt{kMDItemKind == 'PDF Document' \&\&
 \textit{isLeaf} attribute set to true, then the path will display all
 results that match the conjunction.
 
-In order to simplify the implementation of the NFS server, no I/O
+In order to simplify the implementation of the NFS server, no file I/O
 requests are handled by the NFS server itself. Instead, files
 referenced in a query always appear as symbolic links, where the
 content of the link is the full path to the file elsewhere on the file
@@ -279,7 +284,7 @@ supports different tests. The kinds of metadata available for search
 are~\cite{appleref:spotlight-metadata}:
 
 \begin{itemize}
-  \item\textbf{Strings}. Valid tests include eqality, inequality,
+  \item\textbf{Strings}. Valid tests include equality, inequality,
     starts with, ends with, and contains. The operand of the test may
     be any string.
 
@@ -306,7 +311,7 @@ database, which has a null predicate (i.e., it matches anything), is
 not a leaf query, and has no subordinates. That query can then be
 modified through the Birch user interface.
 
-\subsection{Lookups and Cacheing}
+\subsection{Lookups and Caching}
 
 In the NFS protocol, version 2, a ``file handle'' --- an opaque
 identifier used by NFS clients to identify files that have been looked
@@ -367,15 +372,14 @@ file on a system --- say, if it was in a collection of academic papers
 --- by searching for one of the authors. Many programs that produce
 PDF output don't tag the document with this information, of if it
 does, it requires that the creator fill in these fields manually. This
-is a general problem when doing content-based indexing [?].
+is a general problem when doing content-based indexing.
 
 \subsection{Leaves are more sparse than internal nodes}
 
 A set-based file system like we have presented here necessarily, and
 literally, turns the file system hierarchy on its head: since a leaf
 node is defined as a series of conjunctions, leaves are always more
-sparse than nodes higher up in the tree, except in cases where nodes
-on a path are all maked as ``non-leaf.'' This can be a usability
+sparse than nodes higher up in the tree. This can be a usability
 problem, since a person using the file system would, in general, be
 presented with more files early on in her browsing, and may be
 overwhelmed with the number of files present so high up in the tree.
@@ -383,20 +387,19 @@ overwhelmed with the number of files present so high up in the tree.
 There are potential refinements we can make, to help alleviate this
 scenario: one could be to make the subdirectory relationship a
 disjunction, instead of a conjunction, and make each directory
-predicate a conjuction of assertions. This would make the file system
+predicate a conjunction of assertions. This would make the file system
 layout more ``tree-like,'' while retaining the power of a full logical
 language (the disjunctive normal form).
 
-A perhaps better alternative would be to make all query directories
-non-leaf --- that is, make them so they never show their results ---
-and then in each directory present a pseudo-directory called
-``results,'' which ``leafifies'' the parent statement. This way, a
-person is never overwhelmed by intermediate results: she either is
-browsing through available queries, or is inspecting the results of a
-query.
+Another alternative would be to make all query directories non-leaf
+--- that is, make them so they never show their results --- and then
+in each directory present a pseudo-directory called ``results,'' which
+``leafifies'' the parent statement. This way, a person is never
+overwhelmed by intermediate results: she either is browsing through
+available queries, or is inspecting the results of a query.
 
 We recognize, too, that these issues stem directly from our insistence
-on making the file system have POSIX semantics: without that
+on making the file system have POSIX semantics; without that
 requirement, and the tree structure it implies, a new interface may,
 in fact, be better. Using POSIX semantics is valuable when working
 with existing programs, but may pose barriers to usability.
@@ -405,27 +408,28 @@ with existing programs, but may pose barriers to usability.
 
 Because directory names are global, it is easy to get ``lost'' while
 browsing the file system: the person browsing has no indication that
-the directory he is in is part of a more complicated query or
-not. That is, it is very hard to tell if a query has a parent query
-(which, if it does, will produce a conjunction) and thus opening a
-particular directory may give unexpected results.
+the directory he is in is deep or not. That is, it is very hard to
+tell if a query has a parent query (which, if it does, will produce a
+conjunction) and thus opening a particular directory may give
+unexpected results.
 
 \subsection{Synchrony}
 
 A significant problem with Birch is how it interacts with synchronous
 I/O operations --- in some early versions of the program, metadata
 queries took so long to produce any results, even if those results
-returned a nil result set, that the NFS client timed out. Applications
-like Finder are completely unresponsive while some I/O operations,
-like \texttt{readdir}, are taking place. A complicated query with few
-results can render some applications unusable for minutes at a time.
+returned a nil result set, that the OS X NFS client timed
+out. Applications like Finder are completely unresponsive while some
+I/O operations, like \texttt{readdir}, are taking place. A complicated
+query with few results can render some applications unusable for
+minutes at a time.
 
 We have taken some measures to improve this, such as adding an
 internal timeout for metadata queries, such that if the query produces
 no new results within 5 seconds, we end the query with the partial
 results. This is of only moderate help, of course, because the
-application will remain unresponsive for up to 5 seconds or longer, if
-(for example) incremental updates to the result set happens every five
+application will remain unresponsive for at least 5 seconds, or
+longer, if incremental updates to the result set happens every five
 seconds.
 
 Another issue is with queries that match many, many files. These can
@@ -443,6 +447,23 @@ see any way to force applications to update with partial results,
 while still polling the directory --- many applications simply insist
 on reading an entire directory before returning any results.
 
+Modern operating systems like Mac OS X also have some form of event
+notification, that notifies listeners when operations on files are
+performed. The Linux kernel has the \texttt{inotify}
+mechanism~\cite{Dow:2005}; Microsoft Windows NT, 2000, and XP have the
+\texttt{System.IO.FileSystemWatcher}
+class~\cite{MSDN:FileSystemWatcher}; Mac OS X has, in 10.4 and with a
+public API in 10.5, the \texttt{fsevents} mechanism. Each of these
+notifies listeners of various events that happen to the local file
+systems, such as when files are created, removed, modified, etc. Since
+Birch uses a NFS server to implement the file system in user space, it
+cannot notify the kernel of events that happen in the virtual file
+system, such as a new match to one of the queries. Having a mechanism
+where Birch could notify the kernel of events would help solve the
+issue with blocking during \texttt{readdir}: the system only lists
+files it matches immediately, and from then on posts the remaining
+search results as events.
+
 \subsection{Forming Conjunctions}
 
 As we have mentioned, a directory path forms a conjunction of all
@@ -451,30 +472,32 @@ predicates in that path. The implementation of this simply forms a new
 operator, \texttt{\&\&}. Running complicated queries with many terms
 is relatively slow; this can, in principle, be optimized by using the
 results from the partial query and running the additional terms on
-sucessive partial results.
+successive partial results.
 
 \subsection{File Lookups, Caching, and Consistency}
 
 When a client performs a \texttt{readdir}, all matched files are
 inserted into the dentry cache, so when the client comes back to
-\texttt{lookup} each of these, we will have the entries cached. If a
+\texttt{lookup} each of these, we will have the entries ready. If a
 file is not in the dentry cache, we are left with the problem of
 looking up a file, which both matches a query (defined by the
 containing directory) \emph{and} the requested file name. This is
 simple enough to define, by forming a conjunction of the query and a
 term that matches \texttt{kMDItemFSName}. This kind of query is very
 slow, especially if it fails to match any files; our only recourse, to
-maintain responsivenes, is to only run these queries briefly,
+maintain responsiveness, is to only run these queries briefly,
 returning \texttt{ENOENT} if nothing is found.
 
 This caching strategy works well to avoid this issue: after a
 \texttt{readdir}, chances are that any file that will be looked up
 will exist in the dentry cache. We then, however, have a problem with
 when to expire dentry cache entries: flushing them early will mean
-that subsequent \texttt{lookup} calls will likely fail. Also, since
-the dentry cache can be extremely large, removing the
-least-recently-used entries (the cache is an associative map from file
-handle to directory entry) is time-consuming.
+that subsequent \texttt{lookup} calls will likely fail. Not flushing
+old entries, or flushing them rarely, from the cache is a memory
+burden, and the system will not scale. Also, since the dentry cache
+can be extremely large, removing the least-recently-used entries (the
+cache is an associative map from file handle to directory entry) is
+time-consuming.
 
 \subsection{Usability}
 
@@ -490,11 +513,20 @@ navigating a new, alien conceptual space as presented here: we can't
 expect the average person to understand metadata searches and
 conjunctions.
 
-\section{Performance Measurments}
+A ripe area for more investigation is improving the interface for
+defining and editing metadata queries. We like, for example, the
+interface that Mac OS X has for defining ``smart folders'' ---
+what is missing is presenting these searches as a file system.
+Simplicity may be a benefit here; Internet search engines are largely
+so effective because of their simple interface: a list of keywords
+with a simple syntax for defining phrases is sufficient for a wide
+variety of searches.
+
+\section{Performance Measurements}
 
 In this test we chose to run some ``primed'' metadata queries --- that
 is, we ran the query once before running the test, to ensure that the
-metadata server is caching that query --- using both \texttt{mdfind}
+metadata server can cache that query --- using both \texttt{mdfind}
 (the command-line interface to Spotlight) and \texttt{ls -l} on a
 mounted Birch file system. These tests were run on a MacBook Pro with
 a 1.83GHz Intel Core Duo, and 1GB of RAM. The system has a single 80GB
@@ -523,21 +555,24 @@ results of these runs are presented in figure~\ref{fig:benchmarks}.
 These results seem to show that the bulk of the time spent in the file
 system is running the query, and that the NFS protocol overhead (which
 includes a \texttt{lookup}, \texttt{getattr}, and \texttt{readlink}
-call for every search result) is low. An excellent refinement to Birch
-would be to run queries in the background, caching the results until a
-client arrives to read them. The numbers also indicate that
-complicated queries that use wildcard patterns, have many terms, or
-read certain attributes take more resources to run. 
+call for every search result, along with the \texttt{readdir} calls)
+is low. An excellent refinement to Birch is to run queries in the
+background, caching the results until a client arrives to read
+them. The numbers also indicate that complicated queries that use
+wildcard patterns, have many terms, or read certain attributes take
+longer to run.
 
 \section{Conclusion}
 
 We have presented a prototype file system that renders search queries
-as files and directories. There are some technical hurdles left to
-overcome, especially in the area of performance, and given that many
-applications wind up reading dynamic, asynchronous results with a
-highly synchronous API. The Spotlight metadata service is useful in
-this project because it already exists, and provides a number of
-interesting fields to search, but is in our opinion too limited 
+as files and directories. We have some technical hurdles left to
+overcome, especially in the area of performance, given that many
+applications are reading dynamic, asynchronous results with a highly
+synchronous API. The Spotlight metadata service is useful in this
+project because it already exists, and provides a number of
+interesting fields to search, but is in our opinion too limited in the
+quality of searches, and it performs too poorly to become a core part
+of the system's I/O.
 
 In the course of developing this project, we uncovered a bug in the OS
 X NFS client support, which resides in the kernel. An early version of
