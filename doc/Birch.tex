@@ -15,10 +15,10 @@
 \maketitle
 
 \begin{abstract}
-  We preset a dynamic file system for Mac OS X that renders metadata
-  search results as files and directories, and describe the issues
-  that arose in developing this system, and the lessons learned about
-  the usability and performance of such a system.
+  We preset a dynamic file system for Mac OS X that renders Spotlight
+  metadata search results as files and directories, and describe the
+  issues that arose in developing this system, and the lessons learned
+  about the usability and performance of such a system.
 \end{abstract}
 
 \section{Introduction}
@@ -119,16 +119,16 @@ quality in some areas.
 \subsection{Why a Stacking File System}
 
 We could implement our alternative file access system purely in a
-client application, similar to the existing Finder application, and
-some existing efforts \cite{Gorter:2004,Nickell:2006} work from this
-model. We do, however, have an existing wealth of applications that
-use the standard C library calls \texttt{open}, \texttt{read},
-\texttt{write}, etc. Presenting new views of data through a file
-system allows us to use existing programs to access these data,
-without modifying the underlying program. This idea is a powerful one,
-and is not new --- the design of the GNU Hurd \cite{Bushnell:1994}
-emphasizes the power of this idea, and new APIs such as FUSE
-\cite{Szeredi:2006} bring this idea to other operating systems.
+client application, similar to Finder, and some existing efforts
+\cite{Gorter:2004,Nickell:2006} work from this model. We do, however,
+have an wealth of applications that use the standard C library calls
+\texttt{open}, \texttt{read}, \texttt{write}, etc. Presenting new
+views of data through a file system allows us to use existing programs
+to access these data, without modifying the underlying program. This
+idea is a powerful one, and is not new --- the design of the GNU Hurd
+\cite{Bushnell:1994} emphasizes the power of this idea, and packages
+such as FUSE \cite{Szeredi:2006} bring this idea to other operating
+systems.
 
 \subsection{Directories as Sets}
 
@@ -523,10 +523,26 @@ so effective because of their simple interface: a list of keywords
 with a simple syntax for defining phrases is sufficient for a wide
 variety of searches.
 
+\subsection{Filtering Duplicate Names}
+
+Generic searches on the host file system can match many files, some of
+which may have the same name, but exist in different directories.
+Birch will, of course, encounter files that have the same name, but
+exist in the same directory, because they all match the query.
+Duplicate file names pose a problem: in normal file systems, only one
+file may have a given name in a directory. Birch does not address this
+issue; duplicates are returned, and when a client looks up a file
+name, the first one found is returned. How applications react to this
+seems to be random: the BSD \texttt{ls} command will dutifully show
+all duplicates in a directory, while Finder filters them out.
+
+A file system like Birch will need some way to handle matches with the
+same file name, if it is to be used generally.
+
 \section{Performance Measurements}
 
-In this test we chose to run some ``primed'' metadata queries --- that
-is, we ran the query once before running the test, to ensure that the
+In this test we chose to run some warm-cache metadata queries --- we
+ran the query once before running the test, to ensure that the
 metadata server can cache that query --- using both \texttt{mdfind}
 (the command-line interface to Spotlight) and \texttt{ls -l} on a
 mounted Birch file system. These tests were run on a MacBook Pro with
@@ -580,7 +596,7 @@ X NFS client support, which resides in the kernel. An early version of
 Birch was able to cause a kernel panic, simply by returning malformed
 NFS RPC replies.
 
-Birch is available under the GNU General Public License, and is
+Birch is licensed under the GNU General Public License, and is
 available from \url{http://code.google.com/p/birchfs/}.
 
 \bibliography{Sources}
